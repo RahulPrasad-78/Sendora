@@ -11,6 +11,10 @@ const emailLogSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    jobRequirement: {
+      type: String,
+      trim: true,
+    },
     subject: {
       type: String,
       required: true,
@@ -19,6 +23,22 @@ const emailLogSchema = new mongoose.Schema(
     body: {
       type: String,
       required: true,
+      trim: true,
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+    },
+    github: {
+      type: String,
+      trim: true,
+    },
+    leetcode: {
+      type: String,
+      trim: true,
+    },
+    resumeLink: {
+      type: String,
       trim: true,
     },
     sentAt: {
@@ -41,3 +61,4 @@ const emailLogSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("EmailLog", emailLogSchema);
+

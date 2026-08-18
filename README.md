@@ -1,189 +1,392 @@
-# Automated Cold-Email Job Outreach Bot
+# Sendora — AI Email Outreach & Smart Categorization Suite
 
-System design, tech-stack recommendation, database models, and a build roadmap for a Node.js-based automated recruiter outreach tool.
-
-> **Note:** This tool is meant for personalized, low-volume, opt-out-friendly outreach to recruiters — not bulk/unsolicited spam. Keep volumes modest, personalize each email, and honor unsubscribe/opt-out requests. See [Sending Etiquette & Deliverability](#7-sending-etiquette--deliverability) before running this at scale.
-
----
-
-## Table of Contents
-1. [Language & Stack Recommendation](#1-language--stack-recommendation)
-2. [System Design — Flowchart](#2-system-design--flowchart)
-3. [Tools & Libraries You'll Need](#3-tools--libraries-youll-need)
-4. [Database Models](#4-database-models)
-5. [Minimal REST API](#5-minimal-rest-api-express)
-6. [Build Roadmap](#6-build-roadmap-suggested-order)
-7. [Sending Etiquette & Deliverability](#7-sending-etiquette--deliverability)
+> **Sendora** is an intelligent email automation platform featuring two core engines:
+> 1. **AI Cold Outreach Framer & Nodemailer Dispatcher**: Analyzes job requirements to frame hyper-personalized cold outreach emails and sends them via Gmail SMTP with social/portfolio signatures.
+> 2. **AI Email Categorizer & Triage Engine (Scale-Up)**: Reads incoming emails or job updates, automatically classifies them by intent and priority, extracts key action items & deadlines, and drafts instant smart replies.
 
 ---
 
-## 1. Language & Stack Recommendation
-
-**Short answer: stick with Node.js + Express + Nodemailer + MongoDB.** Don't pick up Spring Boot for this project. Here's the reasoning.
-
-### Why not Spring Boot right now
-Spring Boot is a solid framework, but learning a new language ecosystem (Java) while also building the project and job-hunting will slow you down the most at the exact moment speed matters. You're optimizing for landing interviews soon, not for learning a new backend framework. Java/Spring also doesn't currently appear on your target job listings' primary stack (.NET / MERN) — so it won't move the needle on your resume story either.
-
-### Why Node.js + Nodemailer is the right call
-- You already know it — Express + MongoDB is part of your MERN stack (used in ShopNow), so there's zero ramp-up time.
-- Nodemailer is purpose-built for exactly this: sending templated emails via SMTP (Gmail, Outlook, SendGrid, etc.) with attachments (your resume PDF).
-- `node-cron` gives you free task scheduling to run batches daily without a separate scheduler service.
-- It runs great as a simple script on your PC to start with — no server hosting needed yet.
-
-### A stronger alternative worth considering: ASP.NET Core Web API
-Since your target roles are fresher .NET / full-stack, there's a case for building this in ASP.NET Core Web API + EF Core + SQL Server instead. You already know this stack deeply (Horizon LMS, waggles-petshop), and it would give you a *third* portfolio project that directly matches the jobs you're applying to — which can come up naturally in interviews ("I built a tool to automate my own job search"). Use **MailKit** (the .NET equivalent of Nodemailer) for sending mail.
-
-**Trade-off:** since you're less "instantly fluent" in wiring up a fresh ASP.NET Core project from zero compared to Node, it will take a bit longer to get the first version running.
-
-> **Recommendation:** build v1 in Node.js this week to get it working and actually sending emails fast. Once it's stable, a .NET rewrite/v2 becomes a great portfolio piece with no time pressure.
-
-| Criteria | Node.js + Nodemailer | ASP.NET Core + MailKit | Spring Boot |
-|---|---|---|---|
-| Your familiarity | High | High | None |
-| Time to first working version | Fastest | Fast | Slowest |
-| Resume/portfolio relevance | Medium (MERN) | High (.NET target) | Low |
-| Good for this deadline? | Yes — build first | Yes — build after v1 | Not now |
+## 📑 Table of Contents
+- [System Architecture](#system-architecture)
+- [Module 1: Cold Email Outreach (Complete & Active)](#module-1-cold-email-outreach-complete--active)
+- [Module 2: AI Email Categorizer & Triage (Scale-Up Architecture)](#module-2-ai-email-categorizer--triage-scale-up-architecture)
+  - [Categorization Taxonomy & Priority Matrix](#categorization-taxonomy--priority-matrix)
+  - [Data Flow Diagram](#data-flow-diagram)
+  - [Backend API & Database Schema](#backend-api--database-schema)
+  - [AI Prompt Engineering & JSON Output](#ai-prompt-engineering--json-output)
+  - [Step-by-Step Implementation Roadmap](#step-by-step-implementation-roadmap)
+- [Project Directory Structure](#project-directory-structure)
+- [Current API Reference](#current-api-reference)
+- [Setup & Local Development](#setup--local-development)
+- [Environment Variables](#environment-variables)
+- [Author](#author)
 
 ---
 
-## 2. System Design — Flowchart
-
-End-to-end flow: import contacts → store in DB → scheduler runs daily → template personalizes each email → Nodemailer sends it → status is written back to the database → an optional inbox checker updates reply/bounce status → everything is exposed through a small REST API you can later put a dashboard on.
+## System Architecture
 
 ```
-Recruiter/Company Source List (CSV / Sheet / scraped list)
-        │  name, company, role, email
-        ▼
-Import Script — parses source, validates emails, inserts as "Pending"
-        ▼
-Database (MongoDB) — Company / Contact records
-        ▼
-Scheduler (node-cron) — runs daily, picks N "Pending" records (rate-limited)
-        ▼
-Template Engine — fills {{name}}, {{company}}, {{role}} + attaches resume
-        ▼
-Nodemailer + SMTP (Gmail/SendGrid) — sends 1 email, waits before next
-        ▼
-   Send successful? ──No──▶ Log error, status = "Failed", retry next run
-        │ Yes                              │
-        ▼                                  │
-   status = "Sent", sentAt = now()         │
-        └──────────────┬───────────────────┘
-                        ▼
-           Database updated (single source of truth)
-                        ▼
-     Reply / Bounce Checker (IMAP, optional) — polls inbox,
-     updates status = "Replied" / "Bounced"
-                        ▼
-     REST API (Express) — GET /applications, POST /companies,
-     PATCH /applications/:id/status
-                        ▼
-     Dashboard / Frontend (later phase) — view applied companies,
-     status, reply rate, follow-up reminders
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   SENDORA WEB APP                                      │
+├──────────────────────────────────────────┬─────────────────────────────────────────────┤
+│         MODULE 1: OUTREACH ENGINE        │         MODULE 2: CATEGORIZATION ENGINE     │
+│  • Paste Job Requirement / Description   │  • Paste Inbound Email / Recruiter Reply   │
+│  • AI crafts personalized pitch          │  • AI reads, categorizes & extracts tasks   │
+│  • Appends LinkedIn, Resume, GitHub      │  • Assigns Priority & Sentiment score       │
+│  • Dispatches via Nodemailer (SMTP)      │  • Drafts 1-Click Smart Reply               │
+└────────────────────┬─────────────────────┴──────────────────────┬──────────────────────┘
+                     │                                            │
+                     ▼                                            ▼
+┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐
+│        POST /api/emails/generate         │ │        POST /api/emails/categorize        │
+│        POST /api/emails/send             │ │        GET  /api/emails/categorized       │
+└────────────────────┬─────────────────────┘ └────────────────────┬─────────────────────┘
+                     │                                            │
+                     ▼                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                  BACKEND SERVICES                                      │
+│  • aiService.js       : Google Gemini 2.0 Flash with JSON structured response schema   │
+│  • emailService.js    : Nodemailer SMTP with HTML signatures                           │
+│  • categoryService.js : Categorization classifier + metadata extractor                │
+│  • MongoDB Atlas      : Stores EmailLog and CategorizedEmail collections               │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Tools & Libraries You'll Need
+## Module 1: Cold Email Outreach (Complete & Active)
 
-| Purpose | Tool | Notes |
-|---|---|---|
-| Runtime | Node.js (v20+) | You already have this set up |
-| Web framework | Express.js | For the REST API layer |
-| Email sending | Nodemailer | SMTP transport — Gmail App Password or SendGrid/Mailgun |
-| Database | MongoDB + Mongoose | Matches your MERN experience; easy schema for contacts |
-| Scheduling | node-cron | Runs the daily send batch automatically |
-| Templating | Handlebars or JS template strings | Fill `{{name}}`, `{{company}}`, `{{role}}` |
-| Contact import | csv-parser or google-spreadsheet API | Load your recruiter list in bulk |
-| Reply tracking (optional) | imap-simple / node-imap | Detects replies/bounces in your inbox |
-| Env config | dotenv | Keep SMTP credentials out of source code |
-| Rate limiting | p-queue or a delay loop | Avoid spam-filtering — space sends out |
-| Resume attachment | Nodemailer `attachments` option | Attach your resume PDF automatically |
-| Hosting (later) | Railway / Render / Azure App Service | When you're ready to stop running it on your PC |
+This module is fully built, tested, and operational in your project.
+
+### How it works:
+1. **Input Details**: Enter the recruiter's name, email, and paste the job description/requirements.
+2. **AI Email Framing**: Gemini analyzes your profile (`USER_NAME`, `USER_ROLE`, `USER_SKILLS`, `USER_RESUME_SUMMARY` in `.env`) alongside the JD and writes a targeted subject and body.
+3. **Editable Preview**: Review and edit the framed message in the right panel.
+4. **Instant Nodemailer Dispatch**: Hit "Send Email via Nodemailer" to deliver the message via Gmail SMTP (port 465 SSL) complete with an auto-appended signature containing:
+   - 💼 LinkedIn Profile
+   - 📄 Resume Link
+   - 💻 GitHub Profile
+   - 🧩 LeetCode Profile
+5. **Persistent History**: All sent emails are logged to MongoDB Atlas and rendered in the live history table.
 
 ---
 
-## 4. Database Models
+## Module 2: AI Email Categorizer & Triage (Scale-Up Architecture)
 
-Two core collections are enough to start. Keep it simple — extend later once the basic loop (send → log → track) is working.
+The **AI Email Categorizer** is designed to process inbound messages (recruiter replies, application statuses, job opportunities, or pasted email threads) and classify them into clear actionable buckets.
 
-### Company / Contact model
-One document per recruiter/company you plan to email.
+### Categorization Taxonomy & Priority Matrix
 
-```js
+| Category | Priority | Badge Color | Description & Trigger Examples |
+|:---|:---:|:---:|:---|
+| 🎯 **Interview Invitation** | **P1 (Critical)** | `Emerald Green` | Interview scheduling, screen rounds, meeting links, Google Meet/Zoom invites. |
+| 💼 **Job Offer / Assessment** | **P1 (Critical)** | `Gold / Amber` | Formal offer letters, Take-Home assignments, HackerRank/Codility test links. |
+| 🤝 **Recruiter Outreach / Lead** | **P2 (High)** | `Sky Blue` | Recruiter asking for resume, inquiring about availability, or proposing a role. |
+| ⏳ **Action / Follow-Up Needed** | **P3 (Medium)** | `Indigo / Purple` | Pending questions, salary expectation queries, document submissions. |
+| 🚫 **Application Rejection** | **P4 (Low)** | `Slate / Gray` | "Moved forward with other candidates", standard automated rejection notice. |
+| 📰 **Newsletter & General** | **P5 (Low)** | `Zinc / Dark Gray`| Company announcements, job alerts, platform digests. |
+| 🛑 **Spam / Irrelevant** | **P0 (None)** | `Red` | Marketing spam, unverified promotions, irrelevant bulk emails. |
+
+---
+
+### Data Flow Diagram
+
+```
+┌──────────────────────────────────────┐
+│  Inbound Email / Recruiter Response  │
+│  (Pasted by user or fetched via IMAP)│
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│ POST /api/emails/categorize          │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│ backend/services/aiService.js        │
+│  • Calls Gemini 2.0 Flash            │
+│  • Evaluates context & sender intent │
+│  • Enforces Strict JSON Output       │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌────────────────────────────────────────────────────────┐
+│ Structured JSON Output:                                │
+│  {                                                     │
+│    "category": "Interview Invitation",                 │
+│    "priority": "P1",                                   │
+│    "confidenceScore": 96,                              │
+│    "summary": "Invited for Technical Round 1 on Zoom", │
+│    "actionRequired": "Select time slot by Thursday",   │
+│    "deadline": "2026-08-20T17:00:00Z",                 │
+│    "sentiment": "Positive",                            │
+│    "suggestedReply": "Hi Sarah, thank you for..."      │
+│  }                                                     │
+└──────────────────┬─────────────────────────────────────┘
+                   │
+                   ▼
+┌────────────────────────────────────────────────────────┐
+│  • Saved to MongoDB (CategorizedEmail Collection)      │
+│  • Rendered in React Categorizer Kanban / Table View   │
+│  • 1-Click "Send Suggested Reply" via Nodemailer       │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Backend API & Database Schema
+
+#### Mongoose Schema (`backend/models/CategorizedEmail.js`)
+
+```javascript
+const mongoose = require("mongoose");
+
+const categorizedEmailSchema = new mongoose.Schema(
+  {
+    senderName: { type: String, trim: true },
+    senderEmail: { type: String, trim: true },
+    subject: { type: String, required: true, trim: true },
+    rawContent: { type: String, required: true },
+    category: {
+      type: String,
+      enum: [
+        "Interview Invitation",
+        "Job Offer / Assessment",
+        "Recruiter Outreach / Lead",
+        "Action / Follow-Up Needed",
+        "Application Rejection",
+        "Newsletter & General",
+        "Spam / Irrelevant",
+      ],
+      required: true,
+    },
+    priority: {
+      type: String,
+      enum: ["P1", "P2", "P3", "P4", "P5", "P0"],
+      default: "P3",
+    },
+    confidenceScore: { type: Number, min: 0, max: 100 },
+    summary: { type: String, trim: true },
+    actionRequired: { type: String, trim: true },
+    deadline: { type: String, trim: true },
+    sentiment: {
+      type: String,
+      enum: ["Positive", "Neutral", "Urgent", "Rejection", "Negative"],
+      default: "Neutral",
+    },
+    suggestedReply: { type: String, trim: true },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("CategorizedEmail", categorizedEmailSchema);
+```
+
+#### New Endpoints to Implement
+
+| Method | Endpoint | Description |
+|:---|:---|:---|
+| `POST` | `/api/categorize` | Analyzes email text using Gemini, returns category & suggested reply, saves to DB. |
+| `GET` | `/api/categorize` | Fetches all categorized emails (supports `?category=Interview Invitation` & `?priority=P1`). |
+| `POST` | `/api/categorize/reply` | Directly sends the AI-suggested smart reply to the sender using Nodemailer. |
+| `DELETE` | `/api/categorize/:id` | Deletes a categorized email entry. |
+
+---
+
+### AI Prompt Engineering & JSON Output
+
+In `backend/services/aiService.js`, add a dedicated function `categorizeEmailContent({ emailText, subject, sender })`:
+
+```javascript
+const categorizeEmailContent = async ({ emailText, subject, sender }) => {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.2,
+    },
+  });
+
+  const prompt = `
+You are an expert AI Email Assistant. Read the following email content carefully and categorize it accurately.
+
+Sender: ${sender || "Unknown"}
+Subject: ${subject || "No Subject"}
+Email Content:
+"""
+${emailText}
+"""
+
+Classify the email into EXACTLY one of these categories:
+1. "Interview Invitation" (if it contains interview invitations, screening calls, or meeting scheduling)
+2. "Job Offer / Assessment" (if it includes job offers, contracts, OA tests, or coding assessments)
+3. "Recruiter Outreach / Lead" (if a recruiter reaches out regarding an open role or requests a resume)
+4. "Action / Follow-Up Needed" (if the sender requires documents, replies, or specific action)
+5. "Application Rejection" (if it states they are not moving forward with the application)
+6. "Newsletter & General" (if it is a generic newsletter, update, or company announcement)
+7. "Spam / Irrelevant" (if it is unsolicited marketing or spam)
+
+Return ONLY a JSON object matching this schema:
 {
-  companyName:   String,
-  hrName:        String,          // optional, for personalization
-  hrEmail:       String,          // required, unique
-  jobTitle:      String,          // role you're applying for
-  jobPostUrl:    String,          // optional link to the posting
-  source:        String,          // "LinkedIn", "Indeed", "Company site" etc.
-  status:        String,          // "Pending" | "Sent" | "Failed" | "Replied" | "Bounced"
-  sentAt:        Date,
-  repliedAt:     Date,
-  followUpCount: Number,          // how many follow-ups sent
-  notes:         String,
-  createdAt:     Date
+  "category": string (one of the 7 exact strings above),
+  "priority": "P1" | "P2" | "P3" | "P4" | "P5" | "P0",
+  "confidenceScore": number (0-100),
+  "summary": string (1-2 sentence core summary of the email),
+  "actionRequired": string (what action the user must take, or "None"),
+  "deadline": string (any stated deadline or timeframe, or "None"),
+  "sentiment": "Positive" | "Neutral" | "Urgent" | "Rejection" | "Negative",
+  "suggestedReply": string (a professional, polite response ready to send back to the sender)
 }
+`;
+
+  const result = await model.generateContent(prompt);
+  return JSON.parse(result.response.text());
+};
 ```
 
-### Email Log model
-One document per individual email sent, so you keep a full audit trail even if a company record is later updated or reused for a follow-up.
+---
 
-```js
-{
-  companyId:    ObjectId,   // ref -> Company
-  subject:      String,
-  body:         String,     // the exact personalized text sent
-  attachment:   String,     // filename of resume version used
-  sentAt:       Date,
-  status:       String,     // "Sent" | "Failed" | "Bounced"
-  errorMessage: String      // populated only if status = "Failed"
-}
+### Step-by-Step Implementation Roadmap
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                    SCALE-UP IMPLEMENTATION PHASES                      │
+├────────────────────────────────────────────────────────────────────────┤
+│ Phase 1: Backend Categorization Engine                                 │
+│   [ ] Create backend/models/CategorizedEmail.js                        │
+│   [ ] Add categorizeEmailContent() in backend/services/aiService.js    │
+│   [ ] Create backend/controllers/categoryController.js                 │
+│   [ ] Register /api/categorize in backend/routes/categoryRoutes.js     │
+│                                                                        │
+│ Phase 2: Frontend Categorization Tab & UI                              │
+│   [ ] Add Tab Navigation to frontend (Outreach vs. Categorizer)        │
+│   [ ] Build "Analyze & Categorize Email" input panel                   │
+│   [ ] Build Category Badges filter pills (All, P1, Interviews, etc.)  │
+│   [ ] Build Email Detail Modal with "1-Click Send Smart Reply" button  │
+│                                                                        │
+│ Phase 3: Advanced Automation (Optional Next Step)                      │
+│   [ ] IMAP / Gmail OAuth integration to auto-fetch unread inbox emails │
+│   [ ] Automated webhook or cron-job categorization pipeline            │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Why split into two models?** The `Company` model tracks the current state of an application (what matters for your dashboard). The `EmailLog` model is an append-only history — handy if you ever send a follow-up email to the same company and want to see everything you sent them.
+---
+
+## Project Directory Structure
+
+```
+Sendora/
+├── backend/
+│   ├── config/
+│   │   └── db.js                    # Resilient MongoDB Atlas connection
+│   ├── controllers/
+│   │   ├── emailController.js       # Outreach handlers (generate & send)
+│   │   └── categoryController.js    # (Upcoming) Email categorization handlers
+│   ├── models/
+│   │   ├── EmailLog.js              # Sent outreach logs
+│   │   └── CategorizedEmail.js      # (Upcoming) Categorized inbox emails
+│   ├── routes/
+│   │   ├── emailRoutes.js           # /api/emails/*
+│   │   └── categoryRoutes.js        # (Upcoming) /api/categorize/*
+│   ├── services/
+│   │   ├── aiService.js             # Gemini AI email generation & categorization
+│   │   └── emailService.js          # Nodemailer + rich HTML signatures
+│   ├── server.js                    # Express app entry point (port 7000)
+│   ├── package.json
+│   └── .env                         # Secrets and credentials
+│
+└── frontend/
+    ├── src/
+    │   ├── App.jsx                  # Main UI with Outreach & Categorizer views
+    │   ├── index.css                # Glassmorphism dark-mode design system
+    │   └── main.jsx                 # React 19 entry point
+    ├── vite.config.js               # Dev server proxy (:7000)
+    └── package.json
+```
 
 ---
 
-## 5. Minimal REST API (Express)
+## Current API Reference
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/companies` | Add a company/contact manually |
-| POST | `/api/companies/import` | Bulk import from CSV |
-| GET | `/api/companies` | List all, filterable by status |
-| POST | `/api/send/run` | Manually trigger a send batch (for testing) |
-| PATCH | `/api/companies/:id/status` | Update status (e.g. mark Replied manually) |
-| GET | `/api/stats` | Totals: sent, replied, bounced, reply rate |
-
-This API is also exactly what you'll wire a React frontend to later, and it's a clean thing to demo on GitHub even before the frontend exists (Postman screenshots + README are enough for v1).
-
----
-
-## 6. Build Roadmap (Suggested Order)
-
-1. **Day 1 — Project skeleton**: Init Node project, connect MongoDB with Mongoose, define the `Company` schema, add a POST endpoint to manually add one company. Confirm it saves correctly.
-2. **Day 1–2 — Nodemailer basics**: Set up Nodemailer with a Gmail App Password (not your real password). Send yourself a test email with a resume PDF attached before touching real recruiter addresses.
-3. **Day 2 — Templating**: Write 2–3 email template variants (avoid sending the identical text every time — helps deliverability and looks less like a mail-merge to spam filters). Fill placeholders from the DB record.
-4. **Day 3 — CSV import**: Write the import script for your recruiter list. Validate email format before insert. De-duplicate on `hrEmail`.
-5. **Day 3–4 — Send loop + rate limiting**: Build the batch sender — pick N "Pending" records, send with a delay between each (e.g. 30–90 seconds), update status after each send, wrap each send in try/catch so one failure doesn't kill the batch.
-6. **Day 4 — Scheduler**: Wire `node-cron` to run the batch once a day at a fixed time automatically.
-7. **Day 5 — Stats/API polish**: Add the `/api/stats` endpoint and the remaining routes. Test everything with Postman.
-8. **Later — Reply tracking**: Add IMAP polling to auto-detect replies/bounces (this is the most fiddly part — do it last, after the core loop is reliable).
-9. **Later — Frontend**: Build a small React dashboard on top of the existing API.
-10. **Later — .NET rewrite (optional)**: Once stable, rebuild the same system in ASP.NET Core + EF Core + MailKit as a second, portfolio-aligned version.
+### Email Outreach Endpoints
+- **`POST /api/emails/generate`**
+  - **Body**: `{ "jobRequirement": "...", "recruiterName": "..." }`
+  - **Response**: `{ "subject": "...", "body": "..." }`
+- **`POST /api/emails/send`**
+  - **Body**: `{ "recruiterName": "...", "recruiterEmail": "...", "jobRequirement": "...", "subject": "...", "body": "...", "senderName": "...", "linkedin": "...", "resumeLink": "...", "github": "...", "leetcode": "..." }`
+  - **Response**: `{ "message": "Email sent successfully!", "messageId": "..." }`
+- **`GET /api/emails`**
+  - **Response**: Array of the last 50 sent email logs from MongoDB.
 
 ---
 
-## 7. Sending Etiquette & Deliverability
+## Setup & Local Development
 
-- Keep daily volume modest (tens, not hundreds, per day) — this protects your sending address's reputation and avoids being flagged as spam.
-- Personalize every email — use real name, company, and role fields. Never send an identical block of text to hundreds of addresses at once.
-- Space sends out with a delay (30–90 seconds) instead of firing all at once.
-- Use a dedicated sending address if possible, and warm it up gradually rather than blasting from day one.
-- Always include a simple, genuine way to opt out or say "not interested" — good etiquette, and it keeps replies useful signal instead of noise.
-- Double-check every recruiter email is one you sourced from a public job posting or company site — not a scraped/purchased list.
-- Watch your bounce rate — a high bounce rate on a free Gmail account can get sending temporarily restricted.
+### 1. Prerequisites
+- **Node.js**: v18 or higher
+- **Gmail Account**: With an App Password generated ([Google App Passwords](https://myaccount.google.com/apppasswords))
+- **Gemini API Key**: ([Google AI Studio](https://aistudio.google.com/app/apikey))
+- **MongoDB Atlas Cluster**: ([MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
 
-One more thing worth saying directly: automating the sending is the easy part. The 600-cold-emails-per-offer number usually improves a lot with targeting and personalization quality, not just volume — so it's worth spending real time on 2–3 strong template variants rather than only on the pipeline.
+### 2. Configure Backend `.env`
+Create `backend/.env`:
+```env
+PORT=7000
+MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/sendora
+GEMINI_API_KEY=your_gemini_api_key
+
+USER_NAME="Rahul Prasad"
+USER_ROLE="Full Stack Developer"
+USER_SKILLS="Node.js, Express, MongoDB, React, C#, ASP.NET Core"
+USER_RESUME_SUMMARY="Detail-oriented developer with experience building full-stack web applications."
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_16_char_app_password
+```
+
+### 3. Install Dependencies & Run
+
+```bash
+# Terminal 1 — Backend:
+cd backend
+npm install
+npm run dev
+
+# Terminal 2 — Frontend:
+cd frontend
+npm install
+npm run dev
+```
+
+App opens at: **`http://localhost:3000`** (Proxied automatically to backend at `:7000`).
+
+---
+
+## Environment Variables Reference
+
+| Variable | Required | Description |
+|---|:---:|---|
+| `PORT` | No | Backend port (default `7000`) |
+| `MONGO_URI` | No* | MongoDB Atlas connection string (app runs gracefully without it) |
+| `GEMINI_API_KEY` | No* | Google AI API Key (smart fallback template used if absent) |
+| `USER_NAME` | Yes | Your name (used in AI prompt & signature) |
+| `USER_ROLE` | Yes | Your current role / title |
+| `USER_SKILLS` | Yes | List of your core skills |
+| `USER_RESUME_SUMMARY` | Yes | Short summary of your experience |
+| `SMTP_HOST` | Yes | SMTP server (`smtp.gmail.com`) |
+| `SMTP_PORT` | Yes | SMTP port (`465` for SSL, `587` for TLS) |
+| `SMTP_USER` | Yes | Your sender Gmail address |
+| `SMTP_PASS` | Yes | 16-character Gmail App Password |
+
+---
+
+## Author
+
+**Rahul Prasad**
+- **LinkedIn**: [linkedin.com/in/rahulprasad](https://www.linkedin.com/in/rahul-prasad-/)
+- **GitHub**: [github.com/RahulPrasad-78](https://github.com/RahulPrasad-78)
+- **LeetCode**: [leetcode.com/u/Rahul__78](https://leetcode.com/u/Rahul__78/)
