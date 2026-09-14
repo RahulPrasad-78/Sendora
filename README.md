@@ -1,24 +1,44 @@
 # Sendora — AI Email Outreach & Smart Categorization Suite
 
-> **Sendora** is an intelligent email automation platform featuring two core engines:
-> 1. **AI Cold Outreach Framer & Nodemailer Dispatcher**: Analyzes job requirements to frame hyper-personalized cold outreach emails and sends them via Gmail SMTP with social/portfolio signatures.
-> 2. **AI Email Categorizer & Triage Engine (Scale-Up)**: Reads incoming emails or job updates, automatically classifies them by intent and priority, extracts key action items & deadlines, and drafts instant smart replies.
+<div align="center">
+
+![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google%20Gemini-2.0%20Flash-4285F4?logo=google&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![License](https://img.shields.io/badge/License-ISC-blue)
+
+**Sendora** is a full-stack AI-powered email automation platform with three integrated modules: personalized cold outreach, AI resume generation, and intelligent email triage — all in a single glassmorphism dark-mode UI.
+
+</div>
+
+---
+
+## ✨ Features at a Glance
+
+| Module | Status | Description |
+|:---|:---:|:---|
+| 📤 **Cold Email Outreach Engine** | ✅ Live | AI-crafts hyper-personalized emails from job descriptions & sends via Gmail SMTP |
+| 📄 **AI Resume Builder** | ✅ Live | Generates tailored XeLaTeX PDFs, stores in MongoDB, attaches to outreach emails |
+| 🧠 **Dynamic Knowledge Base Studio** | ✅ Live | In-app MongoDB editor for Project READMEs (.md), GitHub repo auto-sync & Master LaTeX Resume |
+| 🗂️ **Email Categorizer & Triage** | ✅ Live | Classifies inbound emails, extracts deadlines & actions, drafts smart replies |
 
 ---
 
 ## 📑 Table of Contents
+
 - [System Architecture](#system-architecture)
-- [Module 1: Cold Email Outreach (Complete & Active)](#module-1-cold-email-outreach-complete--active)
-- [Module 2: AI Email Categorizer & Triage (Scale-Up Architecture)](#module-2-ai-email-categorizer--triage-scale-up-architecture)
-  - [Categorization Taxonomy & Priority Matrix](#categorization-taxonomy--priority-matrix)
-  - [Data Flow Diagram](#data-flow-diagram)
-  - [Backend API & Database Schema](#backend-api--database-schema)
-  - [AI Prompt Engineering & JSON Output](#ai-prompt-engineering--json-output)
-  - [Step-by-Step Implementation Roadmap](#step-by-step-implementation-roadmap)
-- [Project Directory Structure](#project-directory-structure)
-- [Current API Reference](#current-api-reference)
+- [Module 1: Cold Email Outreach](#module-1-cold-email-outreach)
+- [Module 2: AI Resume Builder](#module-2-ai-resume-builder)
+- [Module 3: Dynamic Knowledge Base Studio](#module-3-dynamic-knowledge-base-studio)
+- [Module 4: Email Categorizer & Triage](#module-4-email-categorizer--triage)
+- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
 - [Setup & Local Development](#setup--local-development)
 - [Environment Variables](#environment-variables)
+- [Tech Stack](#tech-stack)
 - [Author](#author)
 
 ---
@@ -26,367 +46,327 @@
 ## System Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   SENDORA WEB APP                                      │
-├──────────────────────────────────────────┬─────────────────────────────────────────────┤
-│         MODULE 1: OUTREACH ENGINE        │         MODULE 2: CATEGORIZATION ENGINE     │
-│  • Paste Job Requirement / Description   │  • Paste Inbound Email / Recruiter Reply   │
-│  • AI crafts personalized pitch          │  • AI reads, categorizes & extracts tasks   │
-│  • Appends LinkedIn, Resume, GitHub      │  • Assigns Priority & Sentiment score       │
-│  • Dispatches via Nodemailer (SMTP)      │  • Drafts 1-Click Smart Reply               │
-└────────────────────┬─────────────────────┴──────────────────────┬──────────────────────┘
-                     │                                            │
-                     ▼                                            ▼
-┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐
-│        POST /api/emails/generate         │ │        POST /api/emails/categorize        │
-│        POST /api/emails/send             │ │        GET  /api/emails/categorized       │
-└────────────────────┬─────────────────────┘ └────────────────────┬─────────────────────┘
-                     │                                            │
-                     ▼                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                  BACKEND SERVICES                                      │
-│  • aiService.js       : Google Gemini 2.0 Flash with JSON structured response schema   │
-│  • emailService.js    : Nodemailer SMTP with HTML signatures                           │
-│  • categoryService.js : Categorization classifier + metadata extractor                │
-│  • MongoDB Atlas      : Stores EmailLog and CategorizedEmail collections               │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    SENDORA WEB APP                                      │
+├──────────────────────┬─────────────────────────────┬───────────────────────────────────┤
+│   MODULE 1           │   MODULE 2                  │   MODULE 3                        │
+│   Cold Outreach      │   AI Resume Builder         │   Email Categorizer               │
+│                      │                             │                                   │
+│ • Paste Job Desc.    │ • Paste Job Desc.           │ • Paste Inbound Email             │
+│ • AI crafts email    │ • AI tailors LaTeX resume   │ • AI classifies & summarizes      │
+│ • Edit preview       │ • Compiles to PDF           │ • Extracts actions & deadlines    │
+│ • Send via SMTP      │ • Attach to outreach emails │ • Drafts 1-click smart reply      │
+└──────────┬───────────┴────────────────┬────────────┴──────────────┬────────────────────┘
+           │                            │                           │
+           ▼                            ▼                           ▼
+  POST /api/emails/generate    POST /api/resumes/generate  POST /api/categorize
+  POST /api/emails/send         GET /api/resumes             GET /api/categorize
+   GET /api/emails               GET /api/resumes/:id/pdf
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   BACKEND SERVICES                                      │
+│  • aiService.js       : Google Gemini 2.0 Flash — email generation & categorization    │
+│  • resumeService.js   : Knowledge-base parsing & XeLaTeX PDF compilation               │
+│  • emailService.js    : Nodemailer SMTP with PDF attachments & HTML signatures         │
+│  • MongoDB Atlas      : EmailLog, TailoredResume, CategorizedEmail collections         │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Module 1: Cold Email Outreach (Complete & Active)
+## Module 1: Cold Email Outreach
 
-This module is fully built, tested, and operational in your project.
+Paste a job description, and Sendora's AI writes a targeted, personalized cold email — then sends it via Gmail SMTP in one click.
 
-### How it works:
-1. **Input Details**: Enter the recruiter's name, email, and paste the job description/requirements.
-2. **AI Email Framing**: Gemini analyzes your profile (`USER_NAME`, `USER_ROLE`, `USER_SKILLS`, `USER_RESUME_SUMMARY` in `.env`) alongside the JD and writes a targeted subject and body.
-3. **Editable Preview**: Review and edit the framed message in the right panel.
-4. **Instant Nodemailer Dispatch**: Hit "Send Email via Nodemailer" to deliver the message via Gmail SMTP (port 465 SSL) complete with an auto-appended signature containing:
-   - 💼 LinkedIn Profile
-   - 📄 Resume Link
-   - 💻 GitHub Profile
-   - 🧩 LeetCode Profile
-5. **Persistent History**: All sent emails are logged to MongoDB Atlas and rendered in the live history table.
+### How it works
+
+1. **Fill recruiter details** — name and email address.
+2. **Paste the job description** — any format works.
+3. **Generate** — Gemini 2.0 Flash analyzes your profile (from `.env`) and the JD to craft a compelling subject + body.
+4. **Edit the preview** — tweak anything before sending.
+5. **Attach a resume** — generate a new AI-tailored resume or pick one from your MongoDB library.
+6. **Send** — dispatched via Nodemailer (Gmail SMTP, port 465 SSL) with an auto-appended signature:
+   - 💼 LinkedIn   |   📄 Resume   |   💻 GitHub   |   🧩 LeetCode
+7. **History log** — all sent emails are saved to MongoDB and shown in a live table.
 
 ---
 
-## Module 2: AI Email Categorizer & Triage (Scale-Up Architecture)
+## Module 2: AI Resume Builder
 
-The **AI Email Categorizer** is designed to process inbound messages (recruiter replies, application statuses, job opportunities, or pasted email threads) and classify them into clear actionable buckets.
+Generates a custom, role-specific LaTeX resume from your master knowledge base — compiled to a binary PDF and stored in MongoDB.
+
+### How it works
+
+1. **Paste a job description** — the AI selects the most relevant projects and skills from your knowledge base.
+2. **AI generates LaTeX** — a full XeLaTeX resume is produced using your `resume.tex` template.
+3. **PDF compilation** — the backend compiles it with XeLaTeX and streams the binary PDF.
+4. **MongoDB library** — every generated resume is saved; browse, preview, and download past resumes.
+5. **Attach to outreach** — when sending a cold email, pick any saved resume to attach as a PDF.
+
+> **Prerequisite**: XeLaTeX must be installed on the backend server for PDF compilation (`texlive-xetex` or MiKTeX).
+
+---
+
+## Module 3: Email Categorizer & Triage
+
+Paste any inbound email (recruiter reply, rejection, offer, etc.) and Sendora's AI classifies it, extracts action items, and drafts a professional reply.
 
 ### Categorization Taxonomy & Priority Matrix
 
-| Category | Priority | Badge Color | Description & Trigger Examples |
-|:---|:---:|:---:|:---|
-| 🎯 **Interview Invitation** | **P1 (Critical)** | `Emerald Green` | Interview scheduling, screen rounds, meeting links, Google Meet/Zoom invites. |
-| 💼 **Job Offer / Assessment** | **P1 (Critical)** | `Gold / Amber` | Formal offer letters, Take-Home assignments, HackerRank/Codility test links. |
-| 🤝 **Recruiter Outreach / Lead** | **P2 (High)** | `Sky Blue` | Recruiter asking for resume, inquiring about availability, or proposing a role. |
-| ⏳ **Action / Follow-Up Needed** | **P3 (Medium)** | `Indigo / Purple` | Pending questions, salary expectation queries, document submissions. |
-| 🚫 **Application Rejection** | **P4 (Low)** | `Slate / Gray` | "Moved forward with other candidates", standard automated rejection notice. |
-| 📰 **Newsletter & General** | **P5 (Low)** | `Zinc / Dark Gray`| Company announcements, job alerts, platform digests. |
-| 🛑 **Spam / Irrelevant** | **P0 (None)** | `Red` | Marketing spam, unverified promotions, irrelevant bulk emails. |
+| Category | Priority | Description |
+|:---|:---:|:---|
+| 🎯 **Interview Invitation** | P1 — Critical | Interview scheduling, screen rounds, Zoom/Meet links |
+| 💼 **Job Offer / Assessment** | P1 — Critical | Formal offers, OA links, HackerRank/Codility tests |
+| 🤝 **Recruiter Outreach / Lead** | P2 — High | Recruiter inquiring about availability or requesting resume |
+| ⏳ **Action / Follow-Up Needed** | P3 — Medium | Pending questions, salary queries, document submissions |
+| 🚫 **Application Rejection** | P4 — Low | "Moved forward with other candidates" standard rejections |
+| 📰 **Newsletter & General** | P5 — Low | Job alerts, platform digests, company announcements |
+| 🛑 **Spam / Irrelevant** | P0 — None | Unsolicited marketing, bulk spam |
 
----
+### AI Output Schema
 
-### Data Flow Diagram
+Each categorized email returns a structured JSON object:
 
-```
-┌──────────────────────────────────────┐
-│  Inbound Email / Recruiter Response  │
-│  (Pasted by user or fetched via IMAP)│
-└──────────────────┬───────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────┐
-│ POST /api/emails/categorize          │
-└──────────────────┬───────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────┐
-│ backend/services/aiService.js        │
-│  • Calls Gemini 2.0 Flash            │
-│  • Evaluates context & sender intent │
-│  • Enforces Strict JSON Output       │
-└──────────────────┬───────────────────┘
-                   │
-                   ▼
-┌────────────────────────────────────────────────────────┐
-│ Structured JSON Output:                                │
-│  {                                                     │
-│    "category": "Interview Invitation",                 │
-│    "priority": "P1",                                   │
-│    "confidenceScore": 96,                              │
-│    "summary": "Invited for Technical Round 1 on Zoom", │
-│    "actionRequired": "Select time slot by Thursday",   │
-│    "deadline": "2026-08-20T17:00:00Z",                 │
-│    "sentiment": "Positive",                            │
-│    "suggestedReply": "Hi Sarah, thank you for..."      │
-│  }                                                     │
-└──────────────────┬─────────────────────────────────────┘
-                   │
-                   ▼
-┌────────────────────────────────────────────────────────┐
-│  • Saved to MongoDB (CategorizedEmail Collection)      │
-│  • Rendered in React Categorizer Kanban / Table View   │
-│  • 1-Click "Send Suggested Reply" via Nodemailer       │
-└────────────────────────────────────────────────────────┘
-```
-
----
-
-### Backend API & Database Schema
-
-#### Mongoose Schema (`backend/models/CategorizedEmail.js`)
-
-```javascript
-const mongoose = require("mongoose");
-
-const categorizedEmailSchema = new mongoose.Schema(
-  {
-    senderName: { type: String, trim: true },
-    senderEmail: { type: String, trim: true },
-    subject: { type: String, required: true, trim: true },
-    rawContent: { type: String, required: true },
-    category: {
-      type: String,
-      enum: [
-        "Interview Invitation",
-        "Job Offer / Assessment",
-        "Recruiter Outreach / Lead",
-        "Action / Follow-Up Needed",
-        "Application Rejection",
-        "Newsletter & General",
-        "Spam / Irrelevant",
-      ],
-      required: true,
-    },
-    priority: {
-      type: String,
-      enum: ["P1", "P2", "P3", "P4", "P5", "P0"],
-      default: "P3",
-    },
-    confidenceScore: { type: Number, min: 0, max: 100 },
-    summary: { type: String, trim: true },
-    actionRequired: { type: String, trim: true },
-    deadline: { type: String, trim: true },
-    sentiment: {
-      type: String,
-      enum: ["Positive", "Neutral", "Urgent", "Rejection", "Negative"],
-      default: "Neutral",
-    },
-    suggestedReply: { type: String, trim: true },
-  },
-  { timestamps: true }
-);
-
-module.exports = mongoose.model("CategorizedEmail", categorizedEmailSchema);
-```
-
-#### New Endpoints to Implement
-
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `POST` | `/api/categorize` | Analyzes email text using Gemini, returns category & suggested reply, saves to DB. |
-| `GET` | `/api/categorize` | Fetches all categorized emails (supports `?category=Interview Invitation` & `?priority=P1`). |
-| `POST` | `/api/categorize/reply` | Directly sends the AI-suggested smart reply to the sender using Nodemailer. |
-| `DELETE` | `/api/categorize/:id` | Deletes a categorized email entry. |
-
----
-
-### AI Prompt Engineering & JSON Output
-
-In `backend/services/aiService.js`, add a dedicated function `categorizeEmailContent({ emailText, subject, sender })`:
-
-```javascript
-const categorizeEmailContent = async ({ emailText, subject, sender }) => {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-      temperature: 0.2,
-    },
-  });
-
-  const prompt = `
-You are an expert AI Email Assistant. Read the following email content carefully and categorize it accurately.
-
-Sender: ${sender || "Unknown"}
-Subject: ${subject || "No Subject"}
-Email Content:
-"""
-${emailText}
-"""
-
-Classify the email into EXACTLY one of these categories:
-1. "Interview Invitation" (if it contains interview invitations, screening calls, or meeting scheduling)
-2. "Job Offer / Assessment" (if it includes job offers, contracts, OA tests, or coding assessments)
-3. "Recruiter Outreach / Lead" (if a recruiter reaches out regarding an open role or requests a resume)
-4. "Action / Follow-Up Needed" (if the sender requires documents, replies, or specific action)
-5. "Application Rejection" (if it states they are not moving forward with the application)
-6. "Newsletter & General" (if it is a generic newsletter, update, or company announcement)
-7. "Spam / Irrelevant" (if it is unsolicited marketing or spam)
-
-Return ONLY a JSON object matching this schema:
+```json
 {
-  "category": string (one of the 7 exact strings above),
-  "priority": "P1" | "P2" | "P3" | "P4" | "P5" | "P0",
-  "confidenceScore": number (0-100),
-  "summary": string (1-2 sentence core summary of the email),
-  "actionRequired": string (what action the user must take, or "None"),
-  "deadline": string (any stated deadline or timeframe, or "None"),
-  "sentiment": "Positive" | "Neutral" | "Urgent" | "Rejection" | "Negative",
-  "suggestedReply": string (a professional, polite response ready to send back to the sender)
+  "category": "Interview Invitation",
+  "priority": "P1",
+  "confidenceScore": 96,
+  "summary": "Invited for Technical Round 1 on Zoom this Thursday.",
+  "actionRequired": "Select a time slot by Thursday",
+  "deadline": "2026-08-20T17:00:00Z",
+  "sentiment": "Positive",
+  "suggestedReply": "Hi Sarah, thank you for reaching out..."
 }
-`;
-
-  const result = await model.generateContent(prompt);
-  return JSON.parse(result.response.text());
-};
 ```
 
 ---
 
-### Step-by-Step Implementation Roadmap
+---
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                    SCALE-UP IMPLEMENTATION PHASES                      │
-├────────────────────────────────────────────────────────────────────────┤
-│ Phase 1: Backend Categorization Engine                                 │
-│   [ ] Create backend/models/CategorizedEmail.js                        │
-│   [ ] Add categorizeEmailContent() in backend/services/aiService.js    │
-│   [ ] Create backend/controllers/categoryController.js                 │
-│   [ ] Register /api/categorize in backend/routes/categoryRoutes.js     │
-│                                                                        │
-│ Phase 2: Frontend Categorization Tab & UI                              │
-│   [ ] Add Tab Navigation to frontend (Outreach vs. Categorizer)        │
-│   [ ] Build "Analyze & Categorize Email" input panel                   │
-│   [ ] Build Category Badges filter pills (All, P1, Interviews, etc.)  │
-│   [ ] Build Email Detail Modal with "1-Click Send Smart Reply" button  │
-│                                                                        │
-│ Phase 3: Advanced Automation (Optional Next Step)                      │
-│   [ ] IMAP / Gmail OAuth integration to auto-fetch unread inbox emails │
-│   [ ] Automated webhook or cron-job categorization pipeline            │
-└────────────────────────────────────────────────────────────────────────┘
-```
+## Module 3: Dynamic Knowledge Base Studio (Complete & Active)
+
+Manage your project portfolio and master resume without touching code or redeploying:
+
+- **MongoDB Cloud Persistence**: Store project READMEs (`.md`) and Master ATS LaTeX template (`.tex`) in MongoDB Atlas.
+- **GitHub Live Import**: Paste any public repository URL (`https://github.com/username/repo`) to auto-fetch the live README.
+- **AI Selection Toggle**: Turn projects on or off with a single click to control which projects Gemini highlights.
+- **Hybrid Fallback**: Loads from MongoDB first; automatically falls back to local disk if running offline.
 
 ---
 
-## Project Directory Structure
+## Module 4: Email Categorizer & Triage (Complete & Active)
+
+Processes inbound recruiter messages, assessment links, and interview invites:
+
+- **7-Category Classification**: Interviews (P1), Job Offers/Assessments (P1), Recruiter Leads (P2), Follow-ups (P3), Rejections (P4), Newsletters (P5), Spam (P0).
+- **Deadline & Action Extraction**: Surfaces test deadlines, interview dates, and required next steps.
+- **1-Click Smart Reply**: AI drafts polite, ready-to-send replies dispatched via Nodemailer.
+
+---
+
+## Project Structure
 
 ```
 Sendora/
 ├── backend/
 │   ├── config/
-│   │   └── db.js                    # Resilient MongoDB Atlas connection
+│   │   └── db.js                    # MongoDB Atlas connection with graceful fallback
 │   ├── controllers/
-│   │   ├── emailController.js       # Outreach handlers (generate & send)
-│   │   └── categoryController.js    # (Upcoming) Email categorization handlers
+│   │   ├── emailController.js       # Outreach generation, sending & history
+│   │   ├── resumeController.js      # Resume generation, PDF streaming & MongoDB storage
+│   │   ├── categoryController.js   # Inbound email categorization & triage
+│   │   └── knowledgeController.js  # Dynamic project READMEs & Master Resume management
 │   ├── models/
 │   │   ├── EmailLog.js              # Sent outreach logs
-│   │   └── CategorizedEmail.js      # (Upcoming) Categorized inbox emails
+│   │   ├── TailoredResume.js        # Tailored resumes (LaTeX source + base64 PDF)
+│   │   ├── CategorizedEmail.js      # Categorized inbound emails & triage data
+│   │   ├── ProjectReadme.js         # Stored project READMEs (markdown + tech tags)
+│   │   └── MasterResume.js          # Master ATS LaTeX resume template
 │   ├── routes/
 │   │   ├── emailRoutes.js           # /api/emails/*
-│   │   └── categoryRoutes.js        # (Upcoming) /api/categorize/*
+│   │   ├── resumeRoutes.js          # /api/resumes/*
+│   │   ├── categoryRoutes.js        # /api/categorize/*
+│   │   └── knowledgeRoutes.js       # /api/knowledge/*
 │   ├── services/
-│   │   ├── aiService.js             # Gemini AI email generation & categorization
-│   │   └── emailService.js          # Nodemailer + rich HTML signatures
+│   │   ├── aiService.js             # Gemini 2.0 Flash — email & categorization AI
+│   │   ├── resumeService.js         # Knowledge-base parsing & XeLaTeX compilation
+│   │   └── emailService.js          # Nodemailer SMTP with PDF attachments & signatures
+│   ├── knowledge-base/
+│   │   ├── resume.tex               # Seed base LaTeX resume
+│   │   ├── kyvernitis-resume.cls    # Custom resume document class
+│   │   └── readmes/                 # Seed project READMEs
 │   ├── server.js                    # Express app entry point (port 7000)
-│   ├── package.json
-│   └── .env                         # Secrets and credentials
+│   ├── .env.example                 # Environment setup template
+│   └── .env                         # Environment secrets (not committed)
 │
-└── frontend/
-    ├── src/
-    │   ├── App.jsx                  # Main UI with Outreach & Categorizer views
-    │   ├── index.css                # Glassmorphism dark-mode design system
-    │   └── main.jsx                 # React 19 entry point
-    ├── vite.config.js               # Dev server proxy (:7000)
-    └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ResumeBuilder.jsx          # AI Resume Builder UI & MongoDB library
+│   │   │   └── KnowledgeBaseManager.jsx   # Dynamic Knowledge Base Studio & GitHub Importer
+│   │   ├── App.jsx                  # Main app — Outreach, Resume Builder, Knowledge Base, Categorizer
+│   │   ├── index.css                # Glassmorphism dark-mode design system
+│   │   └── main.jsx                 # React 19 entry point
+│   ├── vite.config.js               # Dev server with /api proxy to :7000
+│   └── package.json
+│
+├── sendora-overview.html            # Interactive architecture documentation
+└── package.json                     # Root orchestrator scripts
 ```
 
 ---
 
-## Current API Reference
+## API Reference
 
-### Email Outreach Endpoints
-- **`POST /api/emails/generate`**
-  - **Body**: `{ "jobRequirement": "...", "recruiterName": "..." }`
-  - **Response**: `{ "subject": "...", "body": "..." }`
-- **`POST /api/emails/send`**
-  - **Body**: `{ "recruiterName": "...", "recruiterEmail": "...", "jobRequirement": "...", "subject": "...", "body": "...", "senderName": "...", "linkedin": "...", "resumeLink": "...", "github": "...", "leetcode": "..." }`
-  - **Response**: `{ "message": "Email sent successfully!", "messageId": "..." }`
-- **`GET /api/emails`**
-  - **Response**: Array of the last 50 sent email logs from MongoDB.
+### Email Outreach (`/api/emails`)
+
+| Method | Endpoint | Body / Params | Description |
+|:---:|:---|:---|:---|
+| `POST` | `/api/emails/generate` | `{ jobRequirement, recruiterName }` | Generate a personalized email subject & body via AI |
+| `POST` | `/api/emails/send` | `{ recruiterName, recruiterEmail, jobRequirement, subject, body, attachResume, resumeMode, selectedResumeId }` | Send via Nodemailer SMTP; optionally attach a PDF resume |
+| `GET` | `/api/emails` | — | Fetch all sent email logs from MongoDB |
+
+### Resume Builder (`/api/resumes`)
+
+| Method | Endpoint | Body / Params | Description |
+|:---:|:---|:---|:---|
+| `POST` | `/api/resumes/generate` | `{ jobDescription }` | Generate & compile a tailored PDF resume; save to MongoDB |
+| `GET` | `/api/resumes` | — | Fetch all saved resumes (excludes heavy base64 for speed) |
+| `GET` | `/api/resumes/:id/pdf` | `:id` | Stream the binary PDF directly from MongoDB |
+| `DELETE` | `/api/resumes/:id` | `:id` | Delete a saved resume |
+| `GET` | `/api/resumes/status` | — | Check master resume, project READMEs & XeLaTeX compiler status |
+
+### Knowledge Base Studio (`/api/knowledge`)
+
+| Method | Endpoint | Body / Params | Description |
+|:---:|:---|:---|:---|
+| `GET` | `/api/knowledge/projects` | — | Fetch all project READMEs from MongoDB (auto-seeds from disk if empty) |
+| `POST` | `/api/knowledge/projects` | `{ title, content, techStack, repoUrl, tagline }` | Save new project README to MongoDB |
+| `PUT` | `/api/knowledge/projects/:id` | `{ title, content, techStack, isFeatured }` | Update existing project README |
+| `DELETE` | `/api/knowledge/projects/:id` | `:id` | Delete project README from MongoDB |
+| `POST` | `/api/knowledge/projects/github-import` | `{ repoUrl }` | Fetch live README.md directly from a GitHub repository |
+| `GET` | `/api/knowledge/master-resume` | — | Get master ATS LaTeX resume template |
+| `POST` | `/api/knowledge/master-resume` | `{ latexContent, title }` | Save master ATS LaTeX resume to MongoDB |
+| `POST` | `/api/knowledge/master-resume/reset` | — | Reset master resume back to default disk template |
+
+### Email Categorizer (`/api/categorize`)
+
+| Method | Endpoint | Body / Params | Description |
+|:---:|:---|:---|:---|
+| `POST` | `/api/categorize` | `{ rawContent, subject, senderName }` | Categorize email via AI — returns full triage JSON |
+| `GET` | `/api/categorize` | `?category=...&priority=...` | Fetch all categorized emails with optional filters |
+| `POST` | `/api/categorize/reply` | `{ id }` | Send the AI-suggested smart reply to the sender |
+| `DELETE` | `/api/categorize/:id` | `:id` | Delete a categorized email entry |
+
+### Health Check
+
+| Method | Endpoint | Description |
+|:---:|:---|:---|
+| `GET` | `/api/health` | Returns `{ status: "ok", timestamp }` — used by frontend to detect backend status |
 
 ---
 
 ## Setup & Local Development
 
 ### 1. Prerequisites
-- **Node.js**: v18 or higher
-- **Gmail Account**: With an App Password generated ([Google App Passwords](https://myaccount.google.com/apppasswords))
-- **Gemini API Key**: ([Google AI Studio](https://aistudio.google.com/app/apikey))
-- **MongoDB Atlas Cluster**: ([MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
 
-### 2. Configure Backend `.env`
-Create `backend/.env`:
-```env
-PORT=7000
-MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/sendora
-GEMINI_API_KEY=your_gemini_api_key
+- **Node.js** v18 or higher
+- **Gmail Account** with a 16-character [App Password](https://myaccount.google.com/apppasswords) *(2-Step Verification must be enabled)*
+- **Google Gemini API Key** → [Google AI Studio](https://aistudio.google.com/app/apikey)
+- **MongoDB Atlas Cluster** → [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas) *(free tier works fine)*
+- **XeLaTeX** *(optional — required only for AI Resume Builder PDF compilation)*
+  - **Windows**: [MiKTeX](https://miktex.org/download)
+  - **Ubuntu/Debian**: `sudo apt install texlive-xetex`
+  - **macOS**: `brew install --cask mactex`
 
-USER_NAME="Rahul Prasad"
-USER_ROLE="Full Stack Developer"
-USER_SKILLS="Node.js, Express, MongoDB, React, C#, ASP.NET Core"
-USER_RESUME_SUMMARY="Detail-oriented developer with experience building full-stack web applications."
-
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_16_char_app_password
-```
-
-### 3. Install Dependencies & Run
+### 2. Clone the repository
 
 ```bash
-# Terminal 1 — Backend:
-cd backend
-npm install
-npm run dev
+git clone https://github.com/RahulPrasad-78/Sendora.git
+cd Sendora
+```
 
-# Terminal 2 — Frontend:
-cd frontend
-npm install
+### 3. Configure environment variables
+
+Copy `.env.example` to `backend/.env`:
+
+```bash
+# Linux / macOS / Git Bash:
+cp .env.example backend/.env
+
+# Windows PowerShell:
+Copy-Item .env.example backend/.env
+```
+
+Fill in your credentials in `backend/.env` (see [Environment Variables](#environment-variables) below).
+
+### 4. Install all dependencies
+
+Run this single command from the root directory:
+
+```bash
+npm run install:all
+```
+
+This installs root, backend, and frontend packages in one go.
+
+### 5. Run both servers
+
+```bash
 npm run dev
 ```
 
-App opens at: **`http://localhost:3000`** (Proxied automatically to backend at `:7000`).
+| Service | URL |
+|:---|:---|
+| Frontend (Vite) | http://localhost:3000 |
+| Backend (Express) | http://localhost:7000 |
+
+The Vite dev server automatically proxies all `/api` requests to the backend.
 
 ---
 
-## Environment Variables Reference
+## Environment Variables
+
+Copy `.env.example` to `backend/.env` and fill in the values below.
 
 | Variable | Required | Description |
-|---|:---:|---|
-| `PORT` | No | Backend port (default `7000`) |
-| `MONGO_URI` | No* | MongoDB Atlas connection string (app runs gracefully without it) |
-| `GEMINI_API_KEY` | No* | Google AI API Key (smart fallback template used if absent) |
-| `USER_NAME` | Yes | Your name (used in AI prompt & signature) |
-| `USER_ROLE` | Yes | Your current role / title |
-| `USER_SKILLS` | Yes | List of your core skills |
-| `USER_RESUME_SUMMARY` | Yes | Short summary of your experience |
+|:---|:---:|:---|
+| `PORT` | No | Backend port (default: `7000`) |
+| `MONGO_URI` | No* | MongoDB Atlas connection string — app runs gracefully without it |
+| `GEMINI_API_KEY` | No* | Google AI API key — falls back to a template email if absent |
+| `USER_NAME` | Yes | Your full name — used in AI prompts & email signatures |
+| `USER_ROLE` | Yes | Your current role/title |
+| `USER_SKILLS` | Yes | Comma-separated list of your core skills |
+| `USER_RESUME_SUMMARY` | Yes | Short bio used by AI for personalization |
+| `USER_LINKEDIN` | Yes | LinkedIn profile URL |
+| `USER_GITHUB` | Yes | GitHub profile URL |
+| `USER_RESUME` | Yes | Google Drive (or other) link to your resume PDF |
+| `USER_LEETCODE` | Yes | LeetCode profile URL |
 | `SMTP_HOST` | Yes | SMTP server (`smtp.gmail.com`) |
-| `SMTP_PORT` | Yes | SMTP port (`465` for SSL, `587` for TLS) |
-| `SMTP_USER` | Yes | Your sender Gmail address |
+| `SMTP_PORT` | Yes | `465` for SSL, `587` for TLS |
+| `SMTP_USER` | Yes | Sender Gmail address |
 | `SMTP_PASS` | Yes | 16-character Gmail App Password |
+| `SMTP_FROM` | Yes | From address (usually same as `SMTP_USER`) |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|:---|:---|
+| **Frontend** | React 19, Vite 8, Lucide React, Glassmorphism CSS |
+| **Backend** | Node.js, Express 5, Nodemailer |
+| **AI** | Google Gemini 2.0 Flash (`@google/generative-ai`) |
+| **Database** | MongoDB Atlas + Mongoose 9 |
+| **PDF Generation** | XeLaTeX (via `resumeService.js`) |
+| **Dev tooling** | Nodemon, Concurrently, oxlint |
 
 ---
 
 ## Author
 
 **Rahul Prasad**
-- **LinkedIn**: [linkedin.com/in/rahulprasad](https://www.linkedin.com/in/rahul-prasad-/)
-- **GitHub**: [github.com/RahulPrasad-78](https://github.com/RahulPrasad-78)
-- **LeetCode**: [leetcode.com/u/Rahul__78](https://leetcode.com/u/Rahul__78/)
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-rahul--prasad-0077B5?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/rahul-prasad-/)
+[![GitHub](https://img.shields.io/badge/GitHub-RahulPrasad--78-181717?logo=github&logoColor=white)](https://github.com/RahulPrasad-78)
+[![LeetCode](https://img.shields.io/badge/LeetCode-Rahul__78-FFA116?logo=leetcode&logoColor=white)](https://leetcode.com/u/Rahul__78/)

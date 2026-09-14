@@ -14,20 +14,14 @@ import {
   Clock,
   ShieldCheck,
   Inbox,
-  Filter,
-  Search,
-  Zap,
-  Tag,
-  Calendar,
-  CheckCheck,
-  Trash2,
-  Copy,
-  ExternalLink,
-  MessageSquare,
-  AlertTriangle,
-  ArrowRight,
   RefreshCw,
+  Paperclip,
+  Eye,
+  Database,
+  BookOpen,
 } from "lucide-react";
+import ResumeBuilder from "./components/ResumeBuilder";
+import KnowledgeBaseManager from "./components/KnowledgeBaseManager";
 
 // Social Icons
 const LinkedinIcon = ({ size = 14, color = "#0077b5" }) => (
@@ -45,61 +39,9 @@ const GithubIcon = ({ size = 14, color = "#a5b4fc" }) => (
   </svg>
 );
 
-// Realistic Demo Email Samples for Quick Testing
-const DEMO_EMAILS = [
-  {
-    label: "🎯 Google Interview",
-    senderName: "Sarah Connor (Google Staffing)",
-    senderEmail: "sconnor@google.com",
-    subject: "Google Technical Screen: Software Engineer - Cloud Systems",
-    rawContent:
-      "Hi Rahul,\n\nI hope you're having a productive week! Our engineering team reviewed your profile and was very impressed by your background in full stack engineering and cloud platforms.\n\nWe would love to invite you for a 45-minute technical screening interview over Google Meet. Please review the available slots on my calendar link below and book a time that works best for you by this Thursday, 5:00 PM EST:\nhttps://meet.google.com/interview-booking-demo\n\nLooking forward to speaking soon!\n\nBest,\nSarah Connor\nTechnical Recruiter | Google",
-  },
-  {
-    label: "💼 Stripe Coding Test",
-    senderName: "Stripe Talent Team",
-    senderEmail: "recruiting@stripe.com",
-    subject: "Stripe Online Technical Assessment - Full Stack Role",
-    rawContent:
-      "Dear Rahul,\n\nThank you for applying to the Full Stack Engineer role at Stripe. We are excited to move forward with your candidacy!\n\nThe next step in our process is a 90-minute timed coding assessment hosted on HackerRank. Please complete the assessment within the next 48 hours:\nhttps://hackerrank.com/stripe-oa-assessment-demo\n\nIf you have any questions or need accommodations, feel free to reply to this email directly.\n\nBest regards,\nStripe Recruiting",
-  },
-  {
-    label: "🤝 Amazon Recruiter Reachout",
-    senderName: "Marcus Vance",
-    senderEmail: "marcusv@amazon.jobs",
-    subject: "Exciting Software Development Engineer II opportunity at Amazon AWS",
-    rawContent:
-      "Hi Rahul,\n\nI came across your GitHub and LinkedIn profiles and was very impressed by your projects with Node.js, React, and distributed systems. We are actively hiring SDE IIs for our AWS Developer Tools team in Seattle (Hybrid/Remote options).\n\nAre you open to discussing potential career opportunities with our hiring manager? If so, please share your updated resume and a convenient time to connect this week.\n\nBest regards,\nMarcus Vance\nSenior Tech Talent Partner, Amazon Web Services",
-  },
-  {
-    label: "⏳ Meta Follow-Up",
-    senderName: "Meta Recruiting Coordinator",
-    senderEmail: "coordinator@meta.com",
-    subject: "Action Required: Candidate Information Form for Upcoming Onsite",
-    rawContent:
-      "Hi Rahul,\n\nWe are currently preparing your upcoming virtual onsite loop for the Software Engineer position. Before we can finalize the interviewer schedules, we need you to fill out your preferred timezone and coding language preferences.\n\nPlease submit the candidate form before Friday noon:\nhttps://meta.careers/candidate-portal-form\n\nThank you,\nMeta Talent Operations",
-  },
-  {
-    label: "🚫 Microsoft Status",
-    senderName: "Microsoft Careers",
-    senderEmail: "careers@microsoft.com",
-    subject: "Update regarding your application for Software Engineer - Azure",
-    rawContent:
-      "Hi Rahul,\n\nThank you for taking the time to interview with our engineering team at Microsoft. While our team was very impressed by your qualifications and project experience, we have decided to move forward with another candidate whose background more closely matches the specific needs of this opening.\n\nWe will keep your resume in our talent network for future opportunities. We wish you the best in your job search.\n\nSincerely,\nMicrosoft Global Talent Acquisition",
-  },
-  {
-    label: "📰 Weekly Tech Digest",
-    senderName: "DevOps Weekly Digest",
-    senderEmail: "newsletter@devopsdigest.io",
-    subject: "Issue #248: Best practices in Kubernetes orchestration & Node.js 22",
-    rawContent:
-      "Hey developer!\n\nHere is your weekly roundup of top trending articles in cloud infrastructure, container optimization, and backend API performance. Click here to read full tutorials. To update your subscription or opt-out, click unsubscribe.",
-  },
-];
-
 export default function App() {
-  // Navigation State
-  const [activeTab, setActiveTab] = useState("categorizer"); // 'outreach' | 'categorizer'
+  // Navigation State: 'outreach' (Send Mail) | 'resumes' (AI Resume Builder) | 'categorizer' (Email Triage)
+  const [activeTab, setActiveTab] = useState("outreach");
 
   // --- OUTREACH STATE ---
   const [jobRequirement, setJobRequirement] = useState("");
@@ -118,25 +60,40 @@ export default function App() {
   const [outreachLogs, setOutreachLogs] = useState([]);
   const [isLoadingOutreachLogs, setIsLoadingOutreachLogs] = useState(false);
 
-  // --- CATEGORIZER STATE ---
-  const [catSenderName, setCatSenderName] = useState("");
-  const [catSenderEmail, setCatSenderEmail] = useState("");
-  const [catSubject, setCatSubject] = useState("");
-  const [catRawContent, setCatRawContent] = useState("");
-  const [isCategorizing, setIsCategorizing] = useState(false);
-  const [currentAnalysis, setCurrentAnalysis] = useState(null);
-  const [editedReply, setEditedReply] = useState("");
-  const [isSendingReply, setIsSendingReply] = useState(false);
-  const [replyCopied, setReplyCopied] = useState(false);
+  // --- RESUME ATTACHMENT & MONGODB RESUME STATE ---
+  const [savedResumes, setSavedResumes] = useState([]);
+  const [attachResume, setAttachResume] = useState(true);
+  const [resumeMode, setResumeMode] = useState("new"); // 'new' | 'existing'
+  const [selectedResumeId, setSelectedResumeId] = useState("");
+  const [generatedNewResume, setGeneratedNewResume] = useState(null);
+  const [isBuildingOutreachResume, setIsBuildingOutreachResume] = useState(false);
 
-  // Categorizer Inbox State
-  const [categorizedList, setCategorizedList] = useState([]);
-  const [isLoadingCatList, setIsLoadingCatList] = useState(false);
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  // --- OWNER AUTHENTICATION & ACCESS CONTROL STATE ---
+  const [isOwner, setIsOwner] = useState(false);
+  const [ownerToken, setOwnerToken] = useState(() => localStorage.getItem("sendora_owner_token") || "");
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [ownerPasscodeInput, setOwnerPasscodeInput] = useState("");
+  const [ownerAuthError, setOwnerAuthError] = useState("");
+  const [isCheckingPasscode, setIsCheckingPasscode] = useState(false);
+
+  // Restricted Action Modal State (Triggered when non-owner clicks a locked action)
+  const [restrictedModal, setRestrictedModal] = useState({
+    isOpen: false,
+    featureName: "",
+    description: "",
+  });
+
+  const triggerRestrictedAlert = (featureName, description) => {
+    setRestrictedModal({
+      isOpen: true,
+      featureName: featureName || "Owner-Only Feature",
+      description: description || "This action is restricted in Viewer Mode. Recruiters and guests can test all AI prompts and previews freely, while real dispatch and database updates remain securely locked for the portfolio owner.",
+    });
+  };
 
   // Shared UI Banner
   const [statusMessage, setStatusMessage] = useState(null);
+  const [backendDown, setBackendDown] = useState(false);
 
   // Fetch Outreach Logs
   const fetchOutreachLogs = async () => {
@@ -154,26 +111,156 @@ export default function App() {
     }
   };
 
-  // Fetch Categorized List
-  const fetchCategorizedList = async () => {
-    setIsLoadingCatList(true);
+  // Fetch Saved Resumes from MongoDB
+  const fetchSavedResumes = async () => {
     try {
-      const res = await fetch("/api/categorize");
+      const res = await fetch("/api/resumes");
       if (res.ok) {
         const data = await res.json();
-        setCategorizedList(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setSavedResumes(list);
+        if (list.length > 0 && !selectedResumeId) {
+          setSelectedResumeId(list[0]._id);
+        }
       }
     } catch (err) {
-      console.warn("Could not fetch categorized emails:", err);
-    } finally {
-      setIsLoadingCatList(false);
+      console.warn("Could not fetch saved resumes:", err);
     }
   };
 
   useEffect(() => {
+    // Check backend health first — show warning if server is not running
+    fetch("/api/health")
+      .then((r) => { if (!r.ok) throw new Error("not ok"); setBackendDown(false); })
+      .catch(() => setBackendDown(true));
+
     fetchOutreachLogs();
-    fetchCategorizedList();
+    fetchSavedResumes();
+    checkOwnerAuth(ownerToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const checkOwnerAuth = async (token) => {
+    if (!token) {
+      setIsOwner(false);
+      return;
+    }
+    try {
+      const res = await fetch("/api/auth/status", {
+        headers: { "x-owner-key": token },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsOwner(Boolean(data.isOwner));
+      } else {
+        setIsOwner(false);
+      }
+    } catch {
+      setIsOwner(false);
+    }
+  };
+
+  const handleVerifyOwner = async (e) => {
+    e.preventDefault();
+    if (!ownerPasscodeInput.trim()) return;
+
+    setIsCheckingPasscode(true);
+    setOwnerAuthError("");
+
+    try {
+      const res = await fetch("/api/auth/verify-owner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: ownerPasscodeInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid passcode.");
+      }
+
+      const token = data.token;
+      setOwnerToken(token);
+      localStorage.setItem("sendora_owner_token", token);
+      setIsOwner(true);
+      setIsOwnerModalOpen(false);
+      setOwnerPasscodeInput("");
+      setStatusMessage({
+        type: "success",
+        text: "👑 Owner Mode activated! Nodemailer email dispatch and MongoDB knowledge updates are now unlocked.",
+      });
+    } catch (err) {
+      setOwnerAuthError(err.message);
+    } finally {
+      setIsCheckingPasscode(false);
+    }
+  };
+
+  const handleOwnerLogout = () => {
+    localStorage.removeItem("sendora_owner_token");
+    setOwnerToken("");
+    setIsOwner(false);
+    setStatusMessage({
+      type: "success",
+      text: "🔒 Switched to Viewer Mode. Sensitive dispatch and database actions locked.",
+    });
+  };
+
+  // Build tailored resume immediately inside Outreach
+  const handleBuildOutreachResumeNow = async () => {
+    if (!jobRequirement.trim()) {
+      setStatusMessage({ type: "error", text: "Please paste the Job Requirement description first." });
+      return;
+    }
+
+    setIsBuildingOutreachResume(true);
+    try {
+      const res = await fetch("/api/resumes/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(ownerToken ? { "x-owner-key": ownerToken } : {}),
+        },
+        body: JSON.stringify({ jobDescription: jobRequirement }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || "Failed to generate tailored resume");
+
+      setGeneratedNewResume(data.data);
+      if (data.isQuotaExceeded || data.aiErrorMessage) {
+        setStatusMessage({
+          type: "warning",
+          text: `⚠️ ${data.aiErrorMessage || "Google Gemini API daily quota exceeded! Compiled and attached master base resume fallback."}`,
+        });
+      } else {
+        setStatusMessage({
+          type: "success",
+          text: `✨ Tailored resume "${data.data.title}" compiled and attached for this email!`,
+        });
+      }
+      fetchSavedResumes();
+    } catch (err) {
+      setStatusMessage({ type: "error", text: `Error tailoring resume: ${err.message}` });
+    } finally {
+      setIsBuildingOutreachResume(false);
+    }
+  };
+
+  // Switch from ResumeBuilder to Outreach with a resume selected
+  const handleApplyResumeFromBuilder = (resume) => {
+    setActiveTab("outreach");
+    setAttachResume(true);
+    setResumeMode("existing");
+    setSelectedResumeId(resume._id);
+    if (!jobRequirement.trim() && resume.jobDescription) {
+      setJobRequirement(resume.jobDescription);
+    }
+    setStatusMessage({
+      type: "success",
+      text: `📎 Attached "${resume.title}" from MongoDB to your outreach email!`,
+    });
+    window.scrollTo({ top: 120, behavior: "smooth" });
+  };
 
   // --- OUTREACH HANDLERS ---
   const handleGenerateEmail = async (e) => {
@@ -202,10 +289,17 @@ export default function App() {
 
       setSubject(data.subject || "");
       setBody(data.body || "");
-      setStatusMessage({
-        type: "success",
-        text: '✨ AI framed your email successfully! Review and click "Send Email via Nodemailer".',
-      });
+      if (data.isQuotaExceeded || data.aiErrorMessage) {
+        setStatusMessage({
+          type: "warning",
+          text: `⚠️ ${data.aiErrorMessage || "Google Gemini API daily quota limit exceeded! Loaded default email fallback."}`,
+        });
+      } else {
+        setStatusMessage({
+          type: "success",
+          text: '✨ AI framed your email successfully! Review and click "Send Email via Nodemailer".',
+        });
+      }
     } catch (err) {
       setStatusMessage({ type: "error", text: `Generation error: ${err.message}` });
     } finally {
@@ -215,6 +309,16 @@ export default function App() {
 
   const handleSendEmail = async (e) => {
     e.preventDefault();
+
+    // Intercept if in Viewer Mode
+    if (!isOwner) {
+      triggerRestrictedAlert(
+        "Send Email via Nodemailer",
+        "Direct SMTP email dispatch via Nodemailer is disabled in Viewer Mode to protect the author's Gmail credentials and quota. You can still generate personalized AI emails, review subject lines, and preview the full message body."
+      );
+      return;
+    }
+
     if (!recruiterEmail.trim()) {
       setStatusMessage({ type: "error", text: "Recipient Email address is required to send." });
       return;
@@ -230,7 +334,10 @@ export default function App() {
     try {
       const res = await fetch("/api/emails/send", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-owner-key": ownerToken,
+        },
         body: JSON.stringify({
           recruiterName: recruiterName || "Hiring Manager",
           recruiterEmail,
@@ -242,6 +349,10 @@ export default function App() {
           resumeLink,
           github,
           leetcode,
+          attachResume,
+          resumeMode,
+          selectedResumeId: resumeMode === "existing" ? selectedResumeId : null,
+          newResumeData: resumeMode === "new" ? generatedNewResume : null,
         }),
       });
 
@@ -250,9 +361,10 @@ export default function App() {
 
       setStatusMessage({
         type: "success",
-        text: `🚀 Email dispatched via Nodemailer to ${recruiterEmail}! Regards footer attached.`,
+        text: `🚀 ${data.message} to ${recruiterEmail}!`,
       });
       fetchOutreachLogs();
+      fetchSavedResumes();
     } catch (err) {
       setStatusMessage({ type: "error", text: `Dispatch error: ${err.message}` });
     } finally {
@@ -260,181 +372,7 @@ export default function App() {
     }
   };
 
-  // --- CATEGORIZER HANDLERS ---
-  const handleLoadDemoEmail = (demo) => {
-    setCatSenderName(demo.senderName);
-    setCatSenderEmail(demo.senderEmail);
-    setCatSubject(demo.subject);
-    setCatRawContent(demo.rawContent);
-    setStatusMessage({
-      type: "success",
-      text: `Loaded sample: "${demo.label}". Click "Analyze & Categorize with AI" below!`,
-    });
-  };
 
-  const handleCategorizeEmail = async (e) => {
-    e.preventDefault();
-    if (!catRawContent.trim()) {
-      setStatusMessage({ type: "error", text: "Please paste the email content to categorize." });
-      return;
-    }
-
-    setIsCategorizing(true);
-    setStatusMessage(null);
-    setReplyCopied(false);
-
-    try {
-      const res = await fetch("/api/categorize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rawContent: catRawContent,
-          subject: catSubject || "No Subject",
-          senderName: catSenderName || "Hiring Team",
-          senderEmail: catSenderEmail || "",
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Categorization failed");
-
-      setCurrentAnalysis(json.data);
-      setEditedReply(json.data.suggestedReply || "");
-      setStatusMessage({
-        type: "success",
-        text: `🧠 Email Classified: [${json.data.category}] with Priority ${json.data.priority} & ${json.data.confidenceScore}% confidence!`,
-      });
-
-      fetchCategorizedList();
-    } catch (err) {
-      setStatusMessage({ type: "error", text: `Categorization error: ${err.message}` });
-    } finally {
-      setIsCategorizing(false);
-    }
-  };
-
-  const handleSendSmartReply = async () => {
-    if (!catSenderEmail.trim()) {
-      setStatusMessage({
-        type: "error",
-        text: "Sender email is missing. Please provide the sender's email to dispatch reply.",
-      });
-      return;
-    }
-    if (!editedReply.trim()) {
-      setStatusMessage({ type: "error", text: "Reply body cannot be empty." });
-      return;
-    }
-
-    setIsSendingReply(true);
-    setStatusMessage(null);
-
-    try {
-      const res = await fetch("/api/categorize/reply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          emailId: currentAnalysis?._id,
-          recipientEmail: catSenderEmail,
-          subject: catSubject || "Follow up",
-          body: editedReply,
-          senderName: senderName || "Rahul Prasad",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to send smart reply");
-
-      setStatusMessage({
-        type: "success",
-        text: `🚀 Smart reply dispatched via Nodemailer to ${catSenderEmail}!`,
-      });
-      fetchCategorizedList();
-    } catch (err) {
-      setStatusMessage({ type: "error", text: `Reply dispatch error: ${err.message}` });
-    } finally {
-      setIsSendingReply(false);
-    }
-  };
-
-  const handleCopyReply = () => {
-    if (!editedReply) return;
-    navigator.clipboard.writeText(editedReply);
-    setReplyCopied(true);
-    setTimeout(() => setReplyCopied(false), 2500);
-  };
-
-  const handleDeleteCategorized = async (id) => {
-    try {
-      await fetch(`/api/categorize/${id}`, { method: "DELETE" });
-      setCategorizedList((prev) => prev.filter((item) => item._id !== id));
-      if (currentAnalysis?._id === id) setCurrentAnalysis(null);
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
-  };
-
-  const handleUpdateStatus = async (id, newStatus) => {
-    try {
-      const res = await fetch(`/api/categorize/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (res.ok) {
-        setCategorizedList((prev) =>
-          prev.map((item) => (item._id === id ? { ...item, status: newStatus } : item))
-        );
-      }
-    } catch (err) {
-      console.error("Status update error:", err);
-    }
-  };
-
-  // Filter categorized emails
-  const filteredCategorized = categorizedList.filter((item) => {
-    const matchesCategory =
-      selectedCategoryFilter === "All" || item.category === selectedCategoryFilter;
-    const matchesSearch =
-      !searchQuery.trim() ||
-      (item.subject && item.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.senderName && item.senderName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.summary && item.summary.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
-
-  // Calculate Metrics
-  const totalEmails = categorizedList.length;
-  const criticalP1Count = categorizedList.filter((e) => e.priority === "P1").length;
-  const interviewCount = categorizedList.filter((e) => e.category === "Interview Invitation").length;
-  const actionItemsCount = categorizedList.filter(
-    (e) => e.actionRequired && e.actionRequired !== "None"
-  ).length;
-
-  const getCategoryClass = (category) => {
-    switch (category) {
-      case "Interview Invitation": return "cat-interview";
-      case "Job Offer / Assessment": return "cat-offer";
-      case "Recruiter Outreach / Lead": return "cat-outreach";
-      case "Action / Follow-Up Needed": return "cat-followup";
-      case "Application Rejection": return "cat-rejection";
-      case "Newsletter & General": return "cat-newsletter";
-      case "Spam / Irrelevant": return "cat-spam";
-      default: return "cat-newsletter";
-    }
-  };
-
-  const getPriorityClass = (priority) => {
-    switch (priority) {
-      case "P1": return "priority-p1";
-      case "P2": return "priority-p2";
-      case "P3": return "priority-p3";
-      case "P4": return "priority-p4";
-      case "P5": return "priority-p5";
-      case "P0": return "priority-p0";
-      default: return "priority-p3";
-    }
-  };
 
   return (
     <div className="app-wrapper">
@@ -446,23 +384,12 @@ export default function App() {
           </div>
           <div>
             <h1 className="brand-title">Sendora</h1>
-            <p className="brand-tagline">AI Email Outreach & Smart Categorization Suite</p>
+            <p className="brand-tagline">Cold Email Outreach &amp; ATS Resume Engine</p>
           </div>
         </div>
 
         {/* Tab Switcher */}
         <div className="tab-navigation">
-          <button
-            type="button"
-            className={`nav-tab ${activeTab === "categorizer" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("categorizer");
-              setStatusMessage(null);
-            }}
-          >
-            <Inbox size={17} />
-            AI Email Categorizer & Triage
-          </button>
           <button
             type="button"
             className={`nav-tab ${activeTab === "outreach" ? "active" : ""}`}
@@ -471,429 +398,151 @@ export default function App() {
               setStatusMessage(null);
             }}
           >
-            <Send size={17} />
-            Cold Outreach Studio
+            <Send size={15} />
+            <span>Send Mail &amp; Outreach</span>
+          </button>
+          <button
+            type="button"
+            className={`nav-tab ${activeTab === "resumes" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("resumes");
+              setStatusMessage(null);
+            }}
+          >
+            <FileText size={15} />
+            <span>AI Resume Builder</span>
+          </button>
+          <button
+            type="button"
+            className={`nav-tab ${activeTab === "knowledge" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("knowledge");
+              setStatusMessage(null);
+            }}
+          >
+            <Database size={15} />
+            <span>Knowledge Base</span>
+          </button>
+          <button
+            type="button"
+            className={`nav-tab nav-tab-with-sub ${activeTab === "categorizer" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("categorizer");
+              setStatusMessage(null);
+            }}
+          >
+            <Inbox size={15} />
+            <span className="tab-text-group">
+              <span className="tab-main-label">Email Categorizer</span>
+              <span className="tab-sub-badge">Coming Soon</span>
+            </span>
           </button>
         </div>
 
         <div className="header-status">
+          {/* Owner Mode Toggle Button */}
+          {isOwner ? (
+            <button
+              type="button"
+              className="owner-badge-btn owner-badge-active"
+              onClick={handleOwnerLogout}
+              title="Click to lock and switch back to Viewer Mode"
+            >
+              <ShieldCheck size={14} />
+              <span>Owner Mode: Active</span>
+              <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>(Lock)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="owner-badge-btn owner-badge-guest"
+              onClick={() => {
+                setOwnerAuthError("");
+                setIsOwnerModalOpen(true);
+              }}
+              title="Click to enter Owner Passcode and unlock email dispatch & database editing"
+            >
+              <span>🔒 Viewer Mode</span>
+              <span style={{ fontSize: "0.72rem", textDecoration: "underline", opacity: 0.9 }}>Owner Login</span>
+            </button>
+          )}
+
           <span className="status-badge">
             <span className="status-dot"></span>
-            Gemini & Nodemailer Active
+            System Ready
           </span>
         </div>
       </header>
 
       {/* Global Banner */}
       {statusMessage && (
-        <div className={`banner ${statusMessage.type === "success" ? "banner-success" : "banner-error"}`}>
+        <div className={`banner ${statusMessage.type === "success" ? "banner-success" : statusMessage.type === "warning" ? "banner-warning" : "banner-error"}`}>
           {statusMessage.type === "success" ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{statusMessage.text}</span>
         </div>
       )}
 
+      {/* Backend Down Warning */}
+      {backendDown && (
+        <div className="banner banner-error" style={{ justifyContent: "center", fontWeight: 600, fontSize: "0.95rem" }}>
+          <AlertCircle size={20} />
+          <span>
+            ⚠️ Backend server is not running.&nbsp;
+            Open a terminal in the <strong>Sendora</strong> root folder and run:&nbsp;
+            <code style={{ background: "#18181B", color: "#FAF8F5", padding: "2px 8px", borderRadius: "4px", fontFamily: "monospace" }}>npm run dev</code>
+          </span>
+        </div>
+      )}
+
       {/* ========================================================================= */}
-      {/* TAB 1: AI EMAIL CATEGORIZER & TRIAGE */}
+      {/* TAB 1: EMAIL CATEGORIZER — COMING SOON                                    */}
       {/* ========================================================================= */}
       {activeTab === "categorizer" && (
-        <>
-          {/* Quick Metrics Bar */}
-          <div className="stats-row">
-            <div className="stat-card">
-              <div className="stat-icon" style={{ background: "rgba(99, 102, 241, 0.15)", color: "#818cf8" }}>
-                <Inbox size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Total Categorized</h4>
-                <div className="stat-number">{totalEmails}</div>
-              </div>
-            </div>
+        <div className="classic-coming-soon-container">
+          <div className="classic-coming-soon-card">
+            <span className="coming-soon-eyebrow">Future Work</span>
+            <h2 className="coming-soon-heading">Email Categorizer &amp; Smart Triage</h2>
+            <p className="coming-soon-text">
+              Inbound recruiter message classification, priority scheduling (P1 to P5), assessment deadline extraction, and automated one-click polite response drafting are currently in development for a future release.
+            </p>
 
-            <div className="stat-card">
-              <div className="stat-icon" style={{ background: "rgba(220, 38, 38, 0.15)", color: "#f87171" }}>
-                <Zap size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Critical P1 Alerts</h4>
-                <div className="stat-number">{criticalP1Count}</div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#34d399" }}>
-                <Calendar size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Interview Invites</h4>
-                <div className="stat-number">{interviewCount}</div>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#fbbf24" }}>
-                <Clock size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Action Items Due</h4>
-                <div className="stat-number">{actionItemsCount}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Demo Template Loader */}
-          <div className="samples-bar">
-            <div className="samples-label">
-              <Sparkles size={14} /> Quick Demo Email Samples (Click to autofill):
-            </div>
-            <div className="samples-chips">
-              {DEMO_EMAILS.map((demo, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className="sample-chip"
-                  onClick={() => handleLoadDemoEmail(demo)}
-                >
-                  {demo.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Categorizer Workspace Grid */}
-          <div className="categorizer-grid">
-            {/* Left Column: Email Input */}
-            <div className="glass-card">
-              <h2 className="card-title">
-                <div className="card-title-left">
-                  <Mail className="card-title-icon" size={22} />
-                  1. Inbound Email Ingestion
+            <div className="coming-soon-features-grid">
+              <div className="coming-soon-feature-item">
+                <div className="feature-item-num">01</div>
+                <div className="feature-item-title">Priority Triage</div>
+                <div className="feature-item-desc">
+                  Classifies inbound messages from interview invites to offers with urgency scoring.
                 </div>
-              </h2>
-
-              <form onSubmit={handleCategorizeEmail}>
-                <div className="row-2col">
-                  <div className="form-group">
-                    <label className="form-label">Sender Name</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. Sarah Connor (Google)"
-                      value={catSenderName}
-                      onChange={(e) => setCatSenderName(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Sender Email</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      placeholder="e.g. sconnor@google.com"
-                      value={catSenderEmail}
-                      onChange={(e) => setCatSenderEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Subject</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Google Technical Screen: Software Engineer"
-                    value={catSubject}
-                    onChange={(e) => setCatSubject(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Body Content *</label>
-                  <textarea
-                    className="form-textarea"
-                    style={{ minHeight: "180px" }}
-                    placeholder="Paste the email received from a recruiter, employer, or platform..."
-                    required
-                    value={catRawContent}
-                    onChange={(e) => setCatRawContent(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="btn-primary" disabled={isCategorizing}>
-                  {isCategorizing ? (
-                    <>
-                      <Loader2 className="spin" size={20} />
-                      Analyzing with AI Engine...
-                    </>
-                  ) : (
-                    <>
-                      <Zap size={20} />
-                      Analyze & Categorize with AI
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-
-            {/* Right Column: AI Breakdown & Smart Reply */}
-            <div className="glass-card">
-              <h2 className="card-title">
-                <div className="card-title-left">
-                  <Tag className="card-title-icon" size={22} />
-                  2. AI Intelligence & 1-Click Reply
-                </div>
-              </h2>
-
-              {!currentAnalysis ? (
-                <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
-                  <Inbox size={42} style={{ opacity: 0.3, marginBottom: "12px" }} />
-                  <p style={{ fontSize: "0.95rem", fontWeight: 600 }}>No active email analyzed yet.</p>
-                  <p style={{ fontSize: "0.82rem", color: "var(--text-subtle)", marginTop: "4px" }}>
-                    Select a sample from the top bar or paste an email on the left and click "Analyze".
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {/* Analysis Breakdown Panel */}
-                  <div className="analysis-panel">
-                    <div className="analysis-header">
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <span className={`category-badge ${getCategoryClass(currentAnalysis.category)}`}>
-                          {currentAnalysis.category}
-                        </span>
-                        <span className={`priority-pill ${getPriorityClass(currentAnalysis.priority)}`}>
-                          {currentAnalysis.priority} PRIORITY
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 600 }}>
-                        🎯 Confidence: {currentAnalysis.confidenceScore}%
-                      </div>
-                    </div>
-
-                    <div className="summary-callout">
-                      <strong>Summary:</strong> {currentAnalysis.summary}
-                    </div>
-
-                    <div className="meta-grid">
-                      <div className="meta-item">
-                        <div className="meta-title">Action Required</div>
-                        <div className="meta-value">{currentAnalysis.actionRequired || "None"}</div>
-                      </div>
-                      <div className="meta-item">
-                        <div className="meta-title">Deadline / Timeframe</div>
-                        <div className="meta-value">{currentAnalysis.deadline || "None"}</div>
-                      </div>
-                    </div>
-
-                    {currentAnalysis.actionRequired && currentAnalysis.actionRequired !== "None" && (
-                      <div className="action-callout">
-                        ⚠️ <strong>Action Needed:</strong> {currentAnalysis.actionRequired}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 1-Click AI Smart Reply Card */}
-                  <div className="reply-card">
-                    <div className="reply-header">
-                      <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <MessageSquare size={16} color="#6366f1" />
-                        AI Smart Reply Draft
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={handleCopyReply}
-                      >
-                        {replyCopied ? <CheckCheck size={14} color="#10b981" /> : <Copy size={14} />}
-                        {replyCopied ? "Copied!" : "Copy"}
-                      </button>
-                    </div>
-
-                    <textarea
-                      className="form-textarea"
-                      style={{ minHeight: "140px", fontSize: "0.88rem" }}
-                      value={editedReply}
-                      onChange={(e) => setEditedReply(e.target.value)}
-                    />
-
-                    <div style={{ marginTop: "12px" }}>
-                      <button
-                        type="button"
-                        className="btn-primary btn-emerald"
-                        disabled={isSendingReply || !editedReply.trim() || !catSenderEmail.trim()}
-                        onClick={handleSendSmartReply}
-                      >
-                        {isSendingReply ? (
-                          <>
-                            <Loader2 className="spin" size={18} />
-                            Sending via Nodemailer...
-                          </>
-                        ) : (
-                          <>
-                            <Send size={18} />
-                            Send Smart Reply to {catSenderEmail || "Sender"}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Triage Inbox & History Section */}
-          <section className="glass-card" style={{ marginTop: "10px" }}>
-            <div className="card-title">
-              <div className="card-title-left">
-                <Inbox className="card-title-icon" size={22} />
-                Categorized Inbox Triage ({filteredCategorized.length})
               </div>
+              <div className="coming-soon-feature-item">
+                <div className="feature-item-num">02</div>
+                <div className="feature-item-title">Deadline Extractor</div>
+                <div className="feature-item-desc">
+                  Detects assessment deadlines and virtual interview scheduling calendar links.
+                </div>
+              </div>
+              <div className="coming-soon-feature-item">
+                <div className="feature-item-num">03</div>
+                <div className="feature-item-title">Polite Smart Replies</div>
+                <div className="feature-item-desc">
+                  Drafts context-aware professional responses and calendar confirmations in one click.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: "32px" }}>
               <button
                 type="button"
-                className="btn-secondary"
-                onClick={fetchCategorizedList}
+                className="btn-primary"
+                style={{ maxWidth: "300px", margin: "0 auto" }}
+                onClick={() => setActiveTab("outreach")}
               >
-                <RefreshCw size={14} /> Refresh
+                <Send size={15} />
+                Return to Send Mail &amp; Outreach
               </button>
             </div>
-
-            {/* Filter Pills & Search */}
-            <div className="inbox-controls">
-              <div className="filter-pills">
-                {[
-                  "All",
-                  "Interview Invitation",
-                  "Job Offer / Assessment",
-                  "Recruiter Outreach / Lead",
-                  "Action / Follow-Up Needed",
-                  "Application Rejection",
-                  "Newsletter & General",
-                  "Spam / Irrelevant",
-                ].map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={`filter-pill ${selectedCategoryFilter === cat ? "active" : ""}`}
-                    onClick={() => setSelectedCategoryFilter(cat)}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              <div className="search-box">
-                <Search className="search-icon-pos" size={15} />
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Search sender, subject..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {isLoadingCatList ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "20px 0", color: "var(--text-muted)" }}>
-                <Loader2 className="spin" size={18} /> Loading categorized emails...
-              </div>
-            ) : filteredCategorized.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", padding: "16px 0" }}>
-                No categorized emails found matching your filters. Analyze an email above to add it to your triage inbox!
-              </p>
-            ) : (
-              <div className="logs-table-wrapper">
-                <table className="logs-table">
-                  <thead>
-                    <tr>
-                      <th>Sender</th>
-                      <th>Subject & Summary</th>
-                      <th>Category</th>
-                      <th>Priority</th>
-                      <th>Action Due</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCategorized.map((item, idx) => (
-                      <tr key={item._id || idx}>
-                        <td>
-                          <div style={{ fontWeight: "700", color: "var(--text-main)" }}>{item.senderName}</div>
-                          <div style={{ fontSize: "0.76rem", color: "var(--text-subtle)" }}>{item.senderEmail}</div>
-                        </td>
-                        <td style={{ maxWidth: "340px" }}>
-                          <div style={{ fontWeight: "600", color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {item.subject}
-                          </div>
-                          <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {item.summary}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`category-badge ${getCategoryClass(item.category)}`}>
-                            {item.category}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`priority-pill ${getPriorityClass(item.priority)}`}>
-                            {item.priority}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: "0.8rem", color: item.deadline !== "None" ? "#fbbf24" : "var(--text-subtle)" }}>
-                          {item.deadline || "None"}
-                        </td>
-                        <td>
-                          <select
-                            className="form-select"
-                            style={{ padding: "4px 8px", fontSize: "0.78rem", width: "auto" }}
-                            value={item.status || "Unread"}
-                            onChange={(e) => handleUpdateStatus(item._id, e.target.value)}
-                          >
-                            <option value="Unread">Unread</option>
-                            <option value="Read">Read</option>
-                            <option value="Replied">Replied</option>
-                            <option value="Archived">Archived</option>
-                          </select>
-                        </td>
-                        <td>
-                          <div style={{ display: "flex", gap: "6px" }}>
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem" }}
-                              title="Load into Editor"
-                              onClick={() => {
-                                setCurrentAnalysis(item);
-                                setEditedReply(item.suggestedReply || "");
-                                setCatSenderName(item.senderName);
-                                setCatSenderEmail(item.senderEmail);
-                                setCatSubject(item.subject);
-                                setCatRawContent(item.rawContent);
-                                window.scrollTo({ top: 120, behavior: "smooth" });
-                              }}
-                            >
-                              <ArrowRight size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#fb7185" }}
-                              title="Delete Record"
-                              onClick={() => handleDeleteCategorized(item._id)}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        </>
+          </div>
+        </div>
       )}
 
       {/* ========================================================================= */}
@@ -946,6 +595,134 @@ export default function App() {
                     value={jobRequirement}
                     onChange={(e) => setJobRequirement(e.target.value)}
                   />
+                </div>
+
+                {/* Resume Attachment Option */}
+                <div className="resume-attach-panel">
+                  <label className="resume-checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="resume-checkbox"
+                      checked={attachResume}
+                      onChange={(e) => setAttachResume(e.target.checked)}
+                    />
+                    <Paperclip size={18} color="var(--primary)" />
+                    Attach Tailored Resume to Email (PDF)
+                  </label>
+
+                  {attachResume && (
+                    <div className="resume-mode-selector">
+                      <div className="radio-row">
+                        <label
+                          className={`radio-option ${resumeMode === "new" ? "selected" : ""}`}
+                          onClick={() => setResumeMode("new")}
+                        >
+                          <input
+                            type="radio"
+                            name="resumeMode"
+                            checked={resumeMode === "new"}
+                            onChange={() => setResumeMode("new")}
+                          />
+                          <span>⚡ Build New Resume for this JD</span>
+                        </label>
+                        <label
+                          className={`radio-option ${resumeMode === "existing" ? "selected" : ""}`}
+                          onClick={() => setResumeMode("existing")}
+                        >
+                          <input
+                            type="radio"
+                            name="resumeMode"
+                            checked={resumeMode === "existing"}
+                            onChange={() => setResumeMode("existing")}
+                          />
+                          <span>📂 Select Existing from MongoDB ({savedResumes.length})</span>
+                        </label>
+                      </div>
+
+                      {resumeMode === "new" && (
+                        <div className="resume-mode-subpanel">
+                          <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "8px" }}>
+                            Gemini AI analyzes this JD, tailors matching projects from your knowledge base, compiles with XeLaTeX, saves to MongoDB, and attaches the PDF.
+                          </p>
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ fontSize: "0.8rem", padding: "6px 12px" }}
+                              disabled={isBuildingOutreachResume || !jobRequirement.trim()}
+                              onClick={handleBuildOutreachResumeNow}
+                            >
+                              {isBuildingOutreachResume ? (
+                                <>
+                                  <Loader2 className="spin" size={14} /> Building XeLaTeX Resume...
+                                </>
+                              ) : (
+                                <>
+                                  <FileText size={14} /> Preview &amp; Build Resume Now
+                                </>
+                              )}
+                            </button>
+                            {generatedNewResume && (
+                              <span style={{ fontSize: "0.8rem", color: "var(--accent-green)", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <CheckCircle2 size={15} /> Ready: "{generatedNewResume.title}"
+                                {generatedNewResume._id && !generatedNewResume._id.startsWith("mem_") && (
+                                  <a
+                                    href={`/api/resumes/${generatedNewResume._id}/pdf`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: "var(--text-main)", fontWeight: "700", textDecoration: "underline", marginLeft: "4px" }}
+                                  >
+                                    View PDF
+                                  </a>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {resumeMode === "existing" && (
+                        <div className="resume-mode-subpanel">
+                          {savedResumes.length === 0 ? (
+                            <p style={{ fontSize: "0.82rem", color: "var(--accent-gold)" }}>
+                              ⚠️ No saved resumes found in MongoDB. You can generate a new one with "Build New Resume" or use the Resume Builder tab.
+                            </p>
+                          ) : (
+                            <div>
+                              <label className="form-label" style={{ fontSize: "0.78rem" }}>
+                                Select Saved Resume from MongoDB:
+                              </label>
+                              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                                <select
+                                  className="form-select"
+                                  style={{ flex: 1, minWidth: "220px" }}
+                                  value={selectedResumeId}
+                                  onChange={(e) => setSelectedResumeId(e.target.value)}
+                                >
+                                  {savedResumes.map((r) => (
+                                    <option key={r._id} value={r._id}>
+                                      {r.title} ({r.targetRole || "Software Engineer"}{r.company ? ` · ${r.company}` : ""})
+                                    </option>
+                                  ))}
+                                </select>
+                                {selectedResumeId && (
+                                  <a
+                                    href={`/api/resumes/${selectedResumeId}/pdf`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="btn-secondary"
+                                    style={{ textDecoration: "none", fontSize: "0.8rem", padding: "8px 12px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                                  >
+                                    <Eye size={14} /> View PDF
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Regards & Social Links Drawer */}
@@ -1067,29 +844,41 @@ export default function App() {
                   <div className="regards-preview-title">
                     <CheckCircle2 size={14} /> Attached Regards Signature (Auto-appended by Nodemailer):
                   </div>
-                  <p style={{ fontSize: "0.85rem", color: "#e2e8f0", marginBottom: "8px" }}>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-main)", marginBottom: "8px" }}>
                     Best regards,
                     <br />
                     <strong>{senderName}</strong>
                   </p>
                   <div className="regards-preview-links">
                     <div className="link-chip">
-                      <LinkedinIcon size={14} color="#0077b5" />
+                      <LinkedinIcon size={14} color="#18181B" />
                       <a href={linkedin} target="_blank" rel="noreferrer">LinkedIn Profile</a>
                     </div>
                     <div className="link-chip">
-                      <FileText size={14} color="#10b981" />
+                      <FileText size={14} color="#18181B" />
                       <a href={resumeLink} target="_blank" rel="noreferrer">Resume</a>
                     </div>
                     <div className="link-chip">
-                      <GithubIcon size={14} color="#a5b4fc" />
+                      <GithubIcon size={14} color="#18181B" />
                       <a href={github} target="_blank" rel="noreferrer">GitHub Profile</a>
                     </div>
                     <div className="link-chip">
-                      <Code size={14} color="#f59e0b" />
+                      <Code size={14} color="#18181B" />
                       <a href={leetcode} target="_blank" rel="noreferrer">LeetCode Profile</a>
                     </div>
                   </div>
+
+                  {attachResume && (
+                    <div style={{ marginTop: "12px", padding: "8px 12px", background: "#F4EFE6", border: "1px solid var(--border-color)", borderRadius: "6px", fontSize: "0.82rem", color: "var(--text-main)", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Paperclip size={14} color="var(--text-main)" />
+                      <span>
+                        <strong>PDF Resume Attached:</strong>{" "}
+                        {resumeMode === "existing"
+                          ? (savedResumes.find((r) => r._id === selectedResumeId)?.title || "Selected Resume from MongoDB (PDF)")
+                          : (generatedNewResume ? generatedNewResume.title : "Auto-tailored for this JD (PDF)")}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ marginTop: "18px" }}>
@@ -1107,6 +896,7 @@ export default function App() {
                       <>
                         <Send size={20} />
                         Send Email via Nodemailer
+                        {!isOwner && <span className="btn-restricted-tag">🔒 Owner Only</span>}
                       </>
                     )}
                   </button>
@@ -1147,6 +937,7 @@ export default function App() {
                       <th>Recipient</th>
                       <th>Email</th>
                       <th>Subject</th>
+                      <th>Resume Attached</th>
                       <th>Status</th>
                       <th>Time</th>
                     </tr>
@@ -1160,6 +951,15 @@ export default function App() {
                         <td>{log.recruiterEmail}</td>
                         <td style={{ maxWidth: "340px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {log.subject}
+                        </td>
+                        <td>
+                          {log.attachedResumeTitle ? (
+                            <span className="project-tag" style={{ fontSize: "0.72rem" }}>
+                              📎 {log.attachedResumeTitle}
+                            </span>
+                          ) : (
+                            <span style={{ color: "var(--text-subtle)", fontSize: "0.76rem" }}>None</span>
+                          )}
                         </td>
                         <td>
                           <span className={`badge-status ${log.status === "Success" ? "badge-success" : "badge-failed"}`}>
@@ -1177,6 +977,161 @@ export default function App() {
             )}
           </section>
         </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: AI RESUME BUILDER & MONGODB STORAGE */}
+      {/* ========================================================================= */}
+      {activeTab === "resumes" && (
+        <ResumeBuilder
+          savedResumes={savedResumes}
+          onRefreshResumes={fetchSavedResumes}
+          onApplyInSendMail={handleApplyResumeFromBuilder}
+          setStatusMessage={setStatusMessage}
+          isOwner={isOwner}
+          ownerToken={ownerToken}
+          triggerRestrictedAlert={triggerRestrictedAlert}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: DYNAMIC KNOWLEDGE BASE (PROJECT READMES & MASTER RESUME) */}
+      {/* ========================================================================= */}
+      {activeTab === "knowledge" && (
+        <KnowledgeBaseManager
+          isOwner={isOwner}
+          ownerToken={ownerToken}
+          triggerRestrictedAlert={triggerRestrictedAlert}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* GLOBAL FOOTER WITH ABOUT & SYSTEM OVERVIEW LINK                          */}
+      {/* ========================================================================= */}
+      <footer className="app-footer">
+        <div className="footer-left">
+          <Sparkles size={20} color="var(--accent-gold)" />
+          <div>
+            <span className="footer-brand">Sendora</span>
+            <span className="footer-desc"> — Automated Cold Outreach &amp; Tailored ATS Resume Platform</span>
+          </div>
+        </div>
+        <div className="footer-right">
+          <a
+            href="/sendora-overview.html"
+            target="_blank"
+            rel="noreferrer"
+            className="about-artifact-link"
+            title="Read Complete Platform Architecture, Flowcharts & Deployment Guide"
+          >
+            <BookOpen size={15} />
+            <span>About Project &amp; Architecture Flowcharts</span>
+          </a>
+        </div>
+      </footer>
+
+      {/* ========================================================================= */}
+      {/* COLORFUL RESTRICTED ACTION ALERT MODAL                                    */}
+      {/* ========================================================================= */}
+      {restrictedModal.isOpen && (
+        <div className="restricted-overlay" onClick={() => setRestrictedModal({ isOpen: false, featureName: "", description: "" })}>
+          <div className="restricted-card" onClick={(e) => e.stopPropagation()}>
+            <div className="restricted-header">
+              <div className="restricted-icon-box">
+                <AlertCircle size={24} />
+              </div>
+              <div className="restricted-title-wrap">
+                <span className="restricted-subtitle">Portfolio Viewer Mode</span>
+                <h3>Action Reserved for Project Owner</h3>
+              </div>
+            </div>
+            <div className="restricted-body">
+              <p>{restrictedModal.description}</p>
+              <div className="restricted-feature-box">
+                🔒 <strong>Restricted:</strong> {restrictedModal.featureName}
+              </div>
+              <p style={{ marginTop: "12px", fontSize: "0.85rem", color: "var(--text-subtle)" }}>
+                You are currently browsing the live deployment in <strong>Viewer Mode</strong>. Feel free to explore all AI prompts, generated resumes, and architecture diagrams!
+              </p>
+            </div>
+            <div className="restricted-footer">
+              <button
+                type="button"
+                className="restricted-dismiss-btn"
+                onClick={() => setRestrictedModal({ isOpen: false, featureName: "", description: "" })}
+              >
+                Close
+              </button>
+              <a
+                href="/sendora-overview.html"
+                target="_blank"
+                rel="noreferrer"
+                className="restricted-about-btn"
+                onClick={() => setRestrictedModal({ isOpen: false, featureName: "", description: "" })}
+              >
+                <BookOpen size={16} />
+                <span>Learn How Sendora Works</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* OWNER PASSCODE VERIFICATION MODAL                                        */}
+      {/* ========================================================================= */}
+      {isOwnerModalOpen && (
+        <div className="restricted-overlay" onClick={() => setIsOwnerModalOpen(false)}>
+          <div className="restricted-card owner-login-card" onClick={(e) => e.stopPropagation()}>
+            <div className="restricted-header">
+              <div className="restricted-icon-box" style={{ background: "#EEF2FF", borderColor: "#C7D2FE", color: "#4338CA" }}>
+                <ShieldCheck size={24} />
+              </div>
+              <div className="restricted-title-wrap">
+                <span className="restricted-subtitle" style={{ color: "#4338CA" }}>Owner Authentication</span>
+                <h3>Unlock Full Platform Access</h3>
+              </div>
+            </div>
+            <form onSubmit={handleVerifyOwner}>
+              <div className="restricted-body">
+                <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginBottom: "10px" }}>
+                  Enter your owner secret passcode to enable live Nodemailer dispatching and MongoDB database modifications.
+                </p>
+                <label className="form-label" style={{ fontSize: "0.82rem" }}>Owner Passcode</label>
+                <input
+                  type="password"
+                  className="owner-login-input"
+                  placeholder="Enter passcode..."
+                  value={ownerPasscodeInput}
+                  onChange={(e) => setOwnerPasscodeInput(e.target.value)}
+                  autoFocus
+                />
+                {ownerAuthError && (
+                  <div style={{ marginTop: "8px", fontSize: "0.82rem", color: "var(--accent-crimson)", display: "flex", alignItems: "center", gap: "5px" }}>
+                    <AlertCircle size={14} />
+                    <span>{ownerAuthError}</span>
+                  </div>
+                )}
+              </div>
+              <div className="restricted-footer">
+                <button
+                  type="button"
+                  className="restricted-dismiss-btn"
+                  onClick={() => setIsOwnerModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="restricted-about-btn"
+                  disabled={isCheckingPasscode || !ownerPasscodeInput.trim()}
+                >
+                  {isCheckingPasscode ? "Verifying..." : "Unlock Access"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

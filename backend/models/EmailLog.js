@@ -41,6 +41,16 @@ const emailLogSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    attachedResumeTitle: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    attachedResumeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TailoredResume",
+      default: null,
+    },
     sentAt: {
       type: Date,
       default: Date.now,
