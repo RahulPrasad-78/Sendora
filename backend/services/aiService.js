@@ -75,11 +75,10 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.6-flash",
       generationConfig: {
-        responseMimeType: "application/json",
         temperature: 0.7,
-        maxOutputTokens: 600,
+        maxOutputTokens: 800,
       },
     });
 
@@ -94,7 +93,7 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
       `"""${jobRequirement || "Full Stack Developer Position"}"""`,
       "Write a professional, targeted, and concise cold outreach email tailored specifically to match the job requirement provided.",
       "Do NOT include signature links (LinkedIn, GitHub, LeetCode, Resume) in the email body, as those will be appended automatically in the regards section.",
-      "Return ONLY valid JSON with exactly two keys: 'subject' and 'body'.",
+      'Return ONLY valid JSON with exactly two keys: "subject" and "body". Example: {"subject": "...", "body": "..."}',
     ].join("\n");
 
     const result = await model.generateContent(prompt);
@@ -102,7 +101,18 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
     return parseGeneratedEmail(responseText, { jobRequirement, recruiterName });
   } catch (error) {
     console.warn("Gemini API call warning, utilizing intelligent fallback response:", error.message);
-    return buildFallbackEmail({ jobRequirement, recruiterName });
+    const fallback = buildFallbackEmail({ jobRequirement, recruiterName });
+    const isQuota = /429|quota|RESOURCE_EXHAUSTED/i.test(error.message);
+    const isBusy = /503/i.test(error.message);
+    if (isQuota) {
+      fallback.isQuotaExceeded = true;
+      fallback.aiErrorMessage = "Google Gemini API daily quota or rate limit exceeded (429). Used default outreach template fallback.";
+    } else if (isBusy) {
+      fallback.aiErrorMessage = "Google Gemini API is temporarily busy (503). Used default outreach template fallback.";
+    } else {
+      fallback.aiErrorMessage = `Gemini API notice: ${error.message}`;
+    }
+    return fallback;
   }
 };
 

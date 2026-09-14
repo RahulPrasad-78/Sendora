@@ -40,6 +40,7 @@ const buildRegardsFooter = ({
   resumeLink,
   github,
   leetcode,
+  attachedResumeName,
 }) => {
   const name = senderName || process.env.USER_NAME || "Rahul Prasad";
   const linkedinUrl =
@@ -57,7 +58,7 @@ const buildRegardsFooter = ({
     process.env.USER_LEETCODE ||
     "https://leetcode.com/u/Rahul__78/";
 
-  const textFooter = [
+  const textFooterLines = [
     "",
     "Best regards,",
     name,
@@ -67,7 +68,20 @@ const buildRegardsFooter = ({
     `• Resume: ${resumeUrl}`,
     `• GitHub: ${githubUrl}`,
     `• LeetCode: ${leetcodeUrl}`,
-  ].join("\n");
+  ];
+
+  if (attachedResumeName) {
+    textFooterLines.push(`• 📎 Attached Resume: ${attachedResumeName} (PDF)`);
+  }
+
+  const textFooter = textFooterLines.join("\n");
+
+  const attachedBadgeHtml = attachedResumeName
+    ? `
+      <div style="margin-top: 12px; padding: 8px 12px; background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px; font-size: 13px; color: #2b6cb0; font-weight: 600;">
+        📎 Tailored Resume Attached: <span style="color: #2c5282;">${attachedResumeName}</span>
+      </div>`
+    : "";
 
   const htmlFooter = `
 <br/><br/>
@@ -95,6 +109,7 @@ const buildRegardsFooter = ({
         <td><a href="${leetcodeUrl}" target="_blank" style="color: #3182ce; text-decoration: none;">View LeetCode</a></td>
       </tr>
     </table>
+    ${attachedBadgeHtml}
   </div>
 </div>`;
 
@@ -110,6 +125,8 @@ const sendEmail = async ({
   resumeLink,
   github,
   leetcode,
+  attachments = [],
+  attachedResumeName = "",
 }) => {
   if (!to) {
     throw new Error("Recipient email address is required");
@@ -129,6 +146,7 @@ const sendEmail = async ({
     resumeLink,
     github,
     leetcode,
+    attachedResumeName,
   });
 
   const fullText = body + textFooter;
@@ -148,6 +166,7 @@ const sendEmail = async ({
     subject,
     text: fullText,
     html: htmlContent,
+    attachments: attachments || [],
   };
 
   const transporter = createTransporter();
