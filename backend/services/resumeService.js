@@ -4,14 +4,20 @@ const crypto = require("crypto");
 const { execSync } = require("child_process");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const os = require("os");
+
 const KNOWLEDGE_BASE_DIR = path.join(__dirname, "..", "knowledge-base");
 const READMES_DIR = path.join(KNOWLEDGE_BASE_DIR, "readmes");
-const TEMP_DIR = path.join(__dirname, "..", "temp");
+const TEMP_DIR = process.env.VERCEL ? os.tmpdir() : path.join(__dirname, "..", "temp");
 
 // Ensure required directories exist
 [KNOWLEDGE_BASE_DIR, TEMP_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (_e) {
+    // Ignore read-only errors on serverless environments
   }
 });
 
@@ -310,6 +316,8 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
   fs.writeFileSync(texPath, latexContent, "utf-8");
 
   try {
+    // Quick check if xelatex exists before invoking full build
+    execSync("xelatex --version", { stdio: "pipe", timeout: 3000 });
     const cmd = `xelatex -interaction=nonstopmode --enable-installer -output-directory="${TEMP_DIR}" "${texPath}"`;
     execSync(cmd, { cwd: TEMP_DIR, timeout: 60000, stdio: "pipe" });
 
@@ -487,8 +495,18 @@ async function buildTailoredResume({ jobDescription, projectCount = 2 }) {
     numProjects
   );
 
-  const { pdfBuffer } = compileLatexToPdf(tailoredLatex, baseCls);
-  const pdfBase64 = pdfBuffer.toString("base64");
+  let pdfBuffer = null;
+  let pdfBase64 = null;
+  let compileNotice = null;
+
+  try {
+    const compiled = compileLatexToPdf(tailoredLatex, baseCls);
+    pdfBuffer = compiled.pdfBuffer;
+    pdfBase64 = pdfBuffer.toString("base64");
+  } catch (compileErr) {
+    console.warn("XeLaTeX compilation notice:", compileErr.message);
+    compileNotice = "Tailored LaTeX code generated! (Direct PDF compilation is active when running locally with XeLaTeX/MiKTeX)";
+  }
 
   const meta = extractResumeMeta(jobDescription, tailoredLatex, readmes);
 
@@ -498,7 +516,7 @@ async function buildTailoredResume({ jobDescription, projectCount = 2 }) {
     pdfBase64,
     projectCount: numProjects,
     isQuotaExceeded: Boolean(isQuotaExceeded),
-    aiErrorMessage: aiErrorMessage || null,
+    aiErrorMessage: aiErrorMessage || compileNotice || null,
     ...meta,
   };
 }

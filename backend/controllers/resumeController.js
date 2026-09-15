@@ -140,7 +140,9 @@ const downloadResumePdf = async (req, res) => {
     }
 
     if (!resume || !resume.pdfBase64) {
-      return res.status(404).json({ message: "PDF not found for this resume." });
+      return res.status(404).json({
+        message: "PDF preview is not available on this server. Direct PDF compilation requires local XeLaTeX/MiKTeX. You can copy the LaTeX code or download the .tex file directly.",
+      });
     }
 
     const buffer = Buffer.from(resume.pdfBase64, "base64");
@@ -200,9 +202,18 @@ const updateAndRecompileResume = async (req, res) => {
     const baseCls = await readBaseCls();
     const readmes = await readAllReadmes();
 
-    // 2. Compile updated LaTeX via XeLaTeX
-    const { pdfBuffer } = compileLatexToPdf(latexContent, baseCls);
-    const pdfBase64 = pdfBuffer.toString("base64");
+    // 2. Compile updated LaTeX via XeLaTeX (graceful on cloud environments)
+    let pdfBase64 = null;
+    let compileNotice = null;
+    try {
+      const compiled = compileLatexToPdf(latexContent, baseCls);
+      if (compiled && compiled.pdfBuffer) {
+        pdfBase64 = compiled.pdfBuffer.toString("base64");
+      }
+    } catch (compileErr) {
+      console.warn("XeLaTeX recompile notice:", compileErr.message);
+      compileNotice = "LaTeX code saved successfully! (Direct PDF export is active when running locally with XeLaTeX/MiKTeX)";
+    }
 
     // 3. Find existing resume (or create if draft without ID)
     let resume = null;
@@ -233,7 +244,7 @@ const updateAndRecompileResume = async (req, res) => {
 
     if (resume) {
       resume.latexContent = latexContent;
-      resume.pdfBase64 = pdfBase64;
+      if (pdfBase64) resume.pdfBase64 = pdfBase64;
       if (title && title.trim()) resume.title = title.trim();
       if (selectedProjects.length > 0) resume.selectedProjects = selectedProjects;
       try {
@@ -241,7 +252,13 @@ const updateAndRecompileResume = async (req, res) => {
       } catch {
         const idx = memoryResumeStore.findIndex((r) => r._id === id);
         if (idx !== -1) {
-          memoryResumeStore[idx] = { ...memoryResumeStore[idx], latexContent, pdfBase64, title: resume.title, selectedProjects };
+          memoryResumeStore[idx] = {
+            ...memoryResumeStore[idx],
+            latexContent,
+            pdfBase64: pdfBase64 || memoryResumeStore[idx].pdfBase64,
+            title: resume.title,
+            selectedProjects,
+          };
           resume = memoryResumeStore[idx];
         }
       }
@@ -263,7 +280,7 @@ const updateAndRecompileResume = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Resume recompiled with XeLaTeX and updated in MongoDB!",
+      message: compileNotice || "Resume recompiled with XeLaTeX and updated in MongoDB!",
       data: resume,
     });
   } catch (error) {
