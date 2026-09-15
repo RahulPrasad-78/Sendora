@@ -129,12 +129,14 @@ const sendRecruiterEmail = async (req, res) => {
           } catch (dbErr) {
             console.warn("Could not save auto-generated resume to MongoDB:", dbErr.message);
           }
-          attachments.push({
-            filename: generated.pdfFileName,
-            content: generated.pdfBuffer,
-            contentType: "application/pdf",
-          });
-          attachedResumeTitle = generated.title;
+          if (generated.pdfBuffer) {
+            attachments.push({
+              filename: generated.pdfFileName,
+              content: generated.pdfBuffer,
+              contentType: "application/pdf",
+            });
+            attachedResumeTitle = generated.title;
+          }
         }
       }
     }

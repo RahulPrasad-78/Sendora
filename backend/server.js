@@ -20,16 +20,29 @@ app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 connectDB();
 
+// Ensure DB connection on serverless warm starts
+app.use(async (_req, _res, next) => {
+  await connectDB();
+  next();
+});
+
+// Create an API router so endpoints respond whether accessed with or without /api prefix
+const apiRouter = express.Router();
+
 // Health check — lets frontend detect if backend is running
-app.get("/api/health", (_req, res) => {
+apiRouter.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/emails", emailRoutes);
-app.use("/api/categorize", categoryRoutes);
-app.use("/api/resumes", resumeRoutes);
-app.use("/api/knowledge", knowledgeRoutes);
+apiRouter.use("/auth", authRoutes);
+apiRouter.use("/emails", emailRoutes);
+apiRouter.use("/categorize", categoryRoutes);
+apiRouter.use("/resumes", resumeRoutes);
+apiRouter.use("/knowledge", knowledgeRoutes);
+
+// Mount router on BOTH "/api" AND "/" for seamless compatibility with local Vite proxy & Vercel rewrites
+app.use("/api", apiRouter);
+app.use("/", apiRouter);
 
 // Global error handler — ensures no request ever returns an empty body
 app.use((err, _req, res, _next) => {
@@ -38,6 +51,10 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 7000;
-app.listen(PORT, () => {
-  console.log(`✅ Sendora backend running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL && require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`✅ Sendora backend running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

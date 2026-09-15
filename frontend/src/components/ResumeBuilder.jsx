@@ -128,8 +128,6 @@ export default function ResumeBuilder({
       const resumeData = data.data;
       setCurrentResume(resumeData);
       setEditableLatex(resumeData.latexContent || "");
-      setPreviewMode("pdf");
-
       if (resumeData.pdfBase64) {
         const byteCharacters = atob(resumeData.pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
@@ -141,6 +139,10 @@ export default function ResumeBuilder({
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         const url = URL.createObjectURL(blob);
         setPdfUrl(url);
+        setPreviewMode("pdf");
+      } else {
+        setPdfUrl(null);
+        setPreviewMode("latex");
       }
 
       setStage(STAGES.DONE);
@@ -176,6 +178,19 @@ export default function ResumeBuilder({
       a.download = currentResume.pdfFileName || "Tailored_Resume.pdf";
       a.click();
     }
+  };
+
+  // Download .tex source file
+  const handleDownloadTex = () => {
+    const code = editableLatex || currentResume?.latexContent || "";
+    if (!code) return;
+    const blob = new Blob([code], { type: "text/x-tex;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (currentResume?.title ? currentResume.title.replace(/[^a-zA-Z0-9_-]/g, "_") : "Tailored_Resume") + ".tex";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Copy LaTeX
@@ -276,8 +291,10 @@ export default function ResumeBuilder({
         if (pdfUrl) URL.revokeObjectURL(pdfUrl);
         const url = URL.createObjectURL(blob);
         setPdfUrl(url);
+        setPreviewMode(targetMode);
       } else {
-        setPdfUrl(`/api/resumes/${fullResume._id}/pdf`);
+        setPdfUrl(null);
+        setPreviewMode("latex");
       }
 
       setStage(STAGES.DONE);
@@ -342,10 +359,10 @@ export default function ResumeBuilder({
             <Cpu size={20} />
           </div>
           <div>
-            <div className="status-box-title">LaTeX Compiler</div>
+            <div className="status-box-title">LaTeX Engine</div>
             <div className="status-box-value">
-              <span className="status-dot" style={{ background: kbStatus?.xelatexInstalled ? "#10b981" : "#f59e0b" }}></span>
-              {kbStatus?.xelatexInstalled ? "MiKTeX XeTeX Active" : "XeLaTeX Checking..."}
+              <span className="status-dot" style={{ background: kbStatus?.xelatexInstalled ? "#10b981" : "#3b82f6" }}></span>
+              {kbStatus?.xelatexInstalled ? "MiKTeX XeTeX Active" : "LaTeX Ready (Cloud/Local)"}
             </div>
           </div>
         </div>
@@ -626,15 +643,29 @@ export default function ResumeBuilder({
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  className="btn-primary btn-emerald"
-                  style={{ padding: "6px 14px", fontSize: "0.8rem" }}
-                  onClick={handleDownloadPdf}
-                >
-                  <Download size={14} />
-                  Download PDF
-                </button>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: "6px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "5px" }}
+                    onClick={handleDownloadTex}
+                    title="Download raw LaTeX (.tex) file"
+                  >
+                    <Download size={13} />
+                    <span>Download .tex</span>
+                  </button>
+                  {pdfUrl && (
+                    <button
+                      type="button"
+                      className="btn-primary btn-emerald"
+                      style={{ padding: "6px 14px", fontSize: "0.8rem" }}
+                      onClick={handleDownloadPdf}
+                    >
+                      <Download size={14} />
+                      Download PDF
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </h2>
@@ -693,10 +724,20 @@ export default function ResumeBuilder({
                       title="Tailored Resume Preview"
                     />
                   ) : (
-                    <div style={{ textAlign: "center", padding: "40px", background: "var(--bg-card-subtle)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)" }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                        PDF ready. Click Download PDF or View in Browser.
+                    <div style={{ textAlign: "center", padding: "40px 20px", background: "var(--bg-card-subtle)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)" }}>
+                      <Code size={32} style={{ color: "var(--accent-gold)", marginBottom: "12px" }} />
+                      <h4 style={{ fontSize: "0.95rem", fontWeight: 700, marginBottom: "6px" }}>LaTeX ATS Resume Ready</h4>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.84rem", maxWidth: "460px", margin: "0 auto 16px", lineHeight: "1.5" }}>
+                        Direct PDF rendering requires local XeLaTeX/MiKTeX. In cloud serverless mode, your tailored LaTeX source code is ready to view, copy, or download as a <code>.tex</code> file for Overleaf or local compilation.
                       </p>
+                      <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <button type="button" className="btn-secondary" onClick={() => setPreviewMode("latex")}>
+                          <Code size={14} /> View &amp; Edit LaTeX
+                        </button>
+                        <button type="button" className="btn-primary" onClick={handleDownloadTex}>
+                          <Download size={14} /> Download .tex
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
