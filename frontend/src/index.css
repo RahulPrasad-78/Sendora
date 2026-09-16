@@ -577,41 +577,48 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-subtle);
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.regards-preview-links {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.link-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  background: #FFFFFF;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  font-size: 0.74rem;
+  color: var(--text-muted);
   font-weight: 600;
-  color: var(--text-main);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border-color);
 }
 
-.link-chip a {
-  color: var(--text-main);
-  text-decoration: none;
+.regards-signature-content {
+  font-size: 0.85rem;
+  line-height: 1.6;
 }
 
-.link-chip a:hover {
+.regards-signature-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.regards-signature-links .sig-label {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.regards-signature-links a {
+  color: var(--text-main);
   text-decoration: underline;
+  word-break: break-all;
+}
+
+.regards-signature-links a:hover {
+  color: #000000;
+}
+
+.regards-signature-attachment {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Resume Builder Diagnostic Status Strip */
