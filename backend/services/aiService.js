@@ -92,7 +92,8 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
       `Job Requirements / Job Description:`,
       `"""${jobRequirement || "Full Stack Developer Position"}"""`,
       "Write a professional, targeted, and concise cold outreach email tailored specifically to match the job requirement provided.",
-      "Do NOT include signature links (LinkedIn, GitHub, LeetCode, Resume) in the email body, as those will be appended automatically in the regards section.",
+      "Tone: Professional, direct, and human. Avoid fluff, aggressive sales pitches, or emojis.",
+      "Do NOT include sign-offs (e.g., 'Best regards', sender name) or signature links (LinkedIn, GitHub, LeetCode, Resume) in the email body, as the formal signature is appended automatically upon dispatch.",
       'Return ONLY valid JSON with exactly two keys: "subject" and "body". Example: {"subject": "...", "body": "..."}',
     ].join("\n");
 

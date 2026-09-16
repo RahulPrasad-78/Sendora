@@ -842,43 +842,51 @@ export default function App() {
                 {/* Regards Signature Preview */}
                 <div className="regards-preview-box">
                   <div className="regards-preview-title">
-                    <CheckCircle2 size={14} /> Attached Regards Signature (Auto-appended by Nodemailer):
+                    <span>Email Signature (Appended Automatically on Send)</span>
                   </div>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-main)", marginBottom: "8px" }}>
-                    Best regards,
-                    <br />
-                    <strong>{senderName}</strong>
-                  </p>
-                  <div className="regards-preview-links">
-                    <div className="link-chip">
-                      <LinkedinIcon size={14} color="#18181B" />
-                      <a href={linkedin} target="_blank" rel="noreferrer">LinkedIn Profile</a>
+                  <div className="regards-signature-content">
+                    <p style={{ margin: "0 0 3px 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                      Best regards,
+                    </p>
+                    <p style={{ margin: "0 0 8px 0", fontSize: "0.92rem", fontWeight: 600, color: "var(--text-main)" }}>
+                      {senderName}
+                    </p>
+                    <div className="regards-signature-links">
+                      {linkedin && (
+                        <div>
+                          <span className="sig-label">LinkedIn:</span>{" "}
+                          <a href={linkedin} target="_blank" rel="noreferrer">{linkedin}</a>
+                        </div>
+                      )}
+                      {github && (
+                        <div>
+                          <span className="sig-label">GitHub:</span>{" "}
+                          <a href={github} target="_blank" rel="noreferrer">{github}</a>
+                        </div>
+                      )}
+                      {leetcode && (
+                        <div>
+                          <span className="sig-label">LeetCode:</span>{" "}
+                          <a href={leetcode} target="_blank" rel="noreferrer">{leetcode}</a>
+                        </div>
+                      )}
+                      {resumeLink && (
+                        <div>
+                          <span className="sig-label">Resume:</span>{" "}
+                          <a href={resumeLink} target="_blank" rel="noreferrer">View Online Resume</a>
+                        </div>
+                      )}
                     </div>
-                    <div className="link-chip">
-                      <FileText size={14} color="#18181B" />
-                      <a href={resumeLink} target="_blank" rel="noreferrer">Resume</a>
-                    </div>
-                    <div className="link-chip">
-                      <GithubIcon size={14} color="#18181B" />
-                      <a href={github} target="_blank" rel="noreferrer">GitHub Profile</a>
-                    </div>
-                    <div className="link-chip">
-                      <Code size={14} color="#18181B" />
-                      <a href={leetcode} target="_blank" rel="noreferrer">LeetCode Profile</a>
-                    </div>
-                  </div>
 
-                  {attachResume && (
-                    <div style={{ marginTop: "12px", padding: "8px 12px", background: "#F4EFE6", border: "1px solid var(--border-color)", borderRadius: "6px", fontSize: "0.82rem", color: "var(--text-main)", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Paperclip size={14} color="var(--text-main)" />
-                      <span>
-                        <strong>PDF Resume Attached:</strong>{" "}
+                    {attachResume && (
+                      <div className="regards-signature-attachment">
+                        Attachment:{" "}
                         {resumeMode === "existing"
-                          ? (savedResumes.find((r) => r._id === selectedResumeId)?.title || "Selected Resume from MongoDB (PDF)")
-                          : (generatedNewResume ? generatedNewResume.title : "Auto-tailored for this JD (PDF)")}
-                      </span>
-                    </div>
-                  )}
+                          ? (savedResumes.find((r) => r._id === selectedResumeId)?.title || "Selected Resume (PDF)")
+                          : (generatedNewResume ? generatedNewResume.title : "Tailored Resume for this JD (PDF)")}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ marginTop: "18px" }}>

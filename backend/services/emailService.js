@@ -34,6 +34,25 @@ const createTransporter = () => {
   });
 };
 
+const formatDisplayLink = (url, fallbackLabel) => {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (
+      parsed.hostname.includes("drive.google.com") ||
+      parsed.hostname.includes("docs.google.com")
+    ) {
+      return fallbackLabel || "View Online Resume";
+    }
+    const display = (parsed.hostname + parsed.pathname)
+      .replace(/^www\./, "")
+      .replace(/\/$/, "");
+    return display || fallbackLabel || url;
+  } catch {
+    return fallbackLabel || url;
+  }
+};
+
 const buildRegardsFooter = ({
   senderName,
   linkedin,
@@ -63,54 +82,62 @@ const buildRegardsFooter = ({
     "Best regards,",
     name,
     "",
-    "---",
-    `• LinkedIn: ${linkedinUrl}`,
-    `• Resume: ${resumeUrl}`,
-    `• GitHub: ${githubUrl}`,
-    `• LeetCode: ${leetcodeUrl}`,
   ];
 
+  if (linkedinUrl) textFooterLines.push(`LinkedIn: ${linkedinUrl}`);
+  if (githubUrl) textFooterLines.push(`GitHub: ${githubUrl}`);
+  if (leetcodeUrl) textFooterLines.push(`LeetCode: ${leetcodeUrl}`);
+  if (resumeUrl) textFooterLines.push(`Resume: ${resumeUrl}`);
+
   if (attachedResumeName) {
-    textFooterLines.push(`• 📎 Attached Resume: ${attachedResumeName} (PDF)`);
+    textFooterLines.push(`Attachment: ${attachedResumeName} (PDF)`);
   }
 
   const textFooter = textFooterLines.join("\n");
 
-  const attachedBadgeHtml = attachedResumeName
-    ? `
-      <div style="margin-top: 12px; padding: 8px 12px; background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px; font-size: 13px; color: #2b6cb0; font-weight: 600;">
-        📎 Tailored Resume Attached: <span style="color: #2c5282;">${attachedResumeName}</span>
-      </div>`
+  const linkedinDisplay = formatDisplayLink(linkedinUrl, "LinkedIn Profile");
+  const githubDisplay = formatDisplayLink(githubUrl, "GitHub Profile");
+  const leetcodeDisplay = formatDisplayLink(leetcodeUrl, "LeetCode Profile");
+  const resumeDisplay = formatDisplayLink(resumeUrl, "View Online Resume");
+
+  const linkRows = [];
+  if (linkedinUrl) {
+    linkRows.push(
+      `<div>LinkedIn: <a href="${linkedinUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${linkedinDisplay}</a></div>`
+    );
+  }
+  if (githubUrl) {
+    linkRows.push(
+      `<div>GitHub: <a href="${githubUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${githubDisplay}</a></div>`
+    );
+  }
+  if (leetcodeUrl) {
+    linkRows.push(
+      `<div>LeetCode: <a href="${leetcodeUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${leetcodeDisplay}</a></div>`
+    );
+  }
+  if (resumeUrl) {
+    linkRows.push(
+      `<div>Resume: <a href="${resumeUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${resumeDisplay}</a></div>`
+    );
+  }
+
+  const attachedNoteHtml = attachedResumeName
+    ? `<div style="margin-top: 10px; font-size: 13px; color: #57606a;">Attachment: ${attachedResumeName} (PDF)</div>`
     : "";
 
   const htmlFooter = `
-<br/><br/>
-<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; line-height: 1.6; border-top: 2px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
-  <p style="margin: 0 0 4px 0; font-weight: 500; color: #4a5568;">Best regards,</p>
-  <p style="margin: 0 0 16px 0; font-size: 18px; color: #1a202c; font-weight: 700;">${name}</p>
-  
-  <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; width: fit-content; min-width: 320px;">
-    <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #718096;">Profiles & Resume</p>
-    <table border="0" cellpadding="0" cellspacing="0" style="font-size: 14px;">
-      <tr>
-        <td style="padding: 4px 12px 4px 0; font-weight: 600; color: #2b6cb0;">💼 LinkedIn:</td>
-        <td><a href="${linkedinUrl}" target="_blank" style="color: #3182ce; text-decoration: none;">View LinkedIn</a></td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 12px 4px 0; font-weight: 600; color: #2b6cb0;">📄 Resume:</td>
-        <td><a href="${resumeUrl}" target="_blank" style="color: #3182ce; text-decoration: none;">Open Resume</a></td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 12px 4px 0; font-weight: 600; color: #2b6cb0;">💻 GitHub:</td>
-        <td><a href="${githubUrl}" target="_blank" style="color: #3182ce; text-decoration: none;">Visit GitHub</a></td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 12px 4px 0; font-weight: 600; color: #2b6cb0;">🧩 LeetCode:</td>
-        <td><a href="${leetcodeUrl}" target="_blank" style="color: #3182ce; text-decoration: none;">View LeetCode</a></td>
-      </tr>
-    </table>
-    ${attachedBadgeHtml}
-  </div>
+<div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #e1e4e8; font-size: 14px; line-height: 1.6; color: #24292f;">
+  <p style="margin: 0 0 4px 0; font-size: 14px; color: #24292f;">Best regards,</p>
+  <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #24292f;">${name}</p>
+  ${
+    linkRows.length > 0
+      ? `<div style="font-size: 13px; line-height: 1.6; color: #57606a;">
+    ${linkRows.join("\n    ")}
+  </div>`
+      : ""
+  }
+  ${attachedNoteHtml}
 </div>`;
 
   return { textFooter, htmlFooter };
@@ -149,16 +176,31 @@ const sendEmail = async ({
     attachedResumeName,
   });
 
-  const fullText = body + textFooter;
+  const rawBody = (body || "").trim();
+  // Prevent duplicate sign-offs if the body already has a regards/sign-off ending
+  const sanitizedBody = rawBody
+    .replace(
+      /\n+(best\s+regards|warm\s+regards|regards|kind\s+regards|sincerely)[\s\S]*$/i,
+      ""
+    )
+    .trim();
 
-  const htmlContent =
-    body
-      .split("\n\n")
-      .map(
-        (paragraph) =>
-          `<p style="margin: 0 0 12px 0;">${paragraph.replace(/\n/g, "<br/>")}</p>`,
-      )
-      .join("") + htmlFooter;
+  const fullText = sanitizedBody + "\n" + textFooter;
+
+  const paragraphsHtml = sanitizedBody
+    .split(/\n{2,}/)
+    .filter((paragraph) => paragraph.trim())
+    .map(
+      (paragraph) =>
+        `<p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #24292f;">${paragraph.replace(/\n/g, "<br/>")}</p>`,
+    )
+    .join("\n");
+
+  const htmlContent = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #24292f; max-width: 650px;">
+${paragraphsHtml}
+${htmlFooter}
+</div>`;
 
   const mailOptions = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
