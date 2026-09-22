@@ -8,7 +8,7 @@ const os = require("os");
 
 const KNOWLEDGE_BASE_DIR = path.join(__dirname, "..", "knowledge-base");
 const READMES_DIR = path.join(KNOWLEDGE_BASE_DIR, "readmes");
-const TEMP_DIR = process.env.VERCEL ? os.tmpdir() : path.join(__dirname, "..", "temp");
+const TEMP_DIR = (process.env.VERCEL || process.env.NODE_ENV === "production") ? os.tmpdir() : path.join(__dirname, "..", "temp");
 
 // Ensure required directories exist
 [KNOWLEDGE_BASE_DIR, TEMP_DIR].forEach((dir) => {
@@ -386,23 +386,21 @@ function extractResumeMeta(jobDescription, latexContent, knownReadmes = {}) {
   const jd = jobDescription || "";
   const lines = jd.split("\n").map((l) => l.trim()).filter(Boolean);
 
-  // First check first non-empty line (often the job title)
-  if (lines[0] && lines[0].length < 60 && /[A-Z]/.test(lines[0])) {
+  // First check first non-empty line, but ONLY if it looks like a short, actual title
+  if (lines[0] && lines[0].length < 40 && /(developer|engineer|manager|lead|architect|designer|analyst|programmer)/i.test(lines[0])) {
     targetRole = lines[0].replace(/^(job title|role|position|title)\s*[:\-]?\s*/i, "").trim();
-  }
-
-  // Fall back to regex patterns in full text
-  if (targetRole === "Software Engineer") {
+  } else {
+    // Fall back to regex patterns in full text
     const roleMatch = jd.match(
-      /(?:looking for|role|position|title|seeking an?|hiring an?)\s+([A-Za-z0-9\s/+#.-]{3,40})(?:\s+at|\s+to|\s+with|\n|\.)/i
+      /(?:looking for|role|position|title|seeking an?|hiring an?)\s+([A-Za-z0-9\s/+#.-]{3,30})(?:\s+at|\s+to|\s+with|\n|\.)/i
     );
-    if (roleMatch && roleMatch[1]) {
+    if (roleMatch && roleMatch[1] && /(developer|engineer|manager|lead|analyst)/i.test(roleMatch[1])) {
       targetRole = roleMatch[1].trim();
     }
   }
 
   // Clean up targetRole — remove trailing junk
-  targetRole = targetRole.replace(/[^a-zA-Z0-9\s+#./&-]/g, "").trim().substring(0, 50);
+  targetRole = targetRole.replace(/[^a-zA-Z0-9\s+#./&-]/g, "").trim().substring(0, 40);
   if (!targetRole) targetRole = "Software Engineer";
 
   const companyMatch = jd.match(
@@ -456,9 +454,14 @@ function extractResumeMeta(jobDescription, latexContent, knownReadmes = {}) {
     if (/Sendora/i.test(latexContent)) selectedProjects.push("Sendora AI Outreach");
   }
 
+  if (targetRole === "Software Engineer" && skills.length > 0) {
+    // If the title is still generic but we found skills (like C#, Java, React), name it after the skills!
+    targetRole = `${skills.slice(0, 2).join(" ")} Developer`;
+  }
+
   // Human-readable title and filename
   const titleBase = company ? `${targetRole} - ${company}` : `${targetRole} Resume`;
-  // PDF filename: "Python Developer Resume.pdf" — readable, no underscores
+  // PDF filename: "React Node.js Developer Resume.pdf" — readable, no underscores
   const pdfFileName = `${targetRole} Resume.pdf`;
 
   return {

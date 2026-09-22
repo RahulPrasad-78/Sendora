@@ -1,21 +1,28 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const mongoose = require("mongoose");
+const ProjectReadme = require("../models/ProjectReadme");
+const MasterResume = require("../models/MasterResume");
+
+// Single source of truth for the Gemini model. Override with GEMINI_MODEL in .env
+// when Google retires or supersedes this one.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 // --- UTILS FOR OUTREACH GENERATION ---
 const extractTargetRole = (jobRequirement) => {
   if (!jobRequirement) return "Software Engineering Role";
   const lines = jobRequirement.split("\n").map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
-    if (/title|role|position|developer|engineer|manager|lead/i.test(line)) {
-      return line.replace(/^(job\s+title|role|position):?\s*/i, "").substring(0, 60);
+    if (line.length < 40 && /(developer|engineer|manager|lead|architect|designer|analyst|programmer)/i.test(line)) {
+      return line.replace(/^(job\s+title|role|position):?\s*/i, "").substring(0, 40);
     }
   }
-  return lines[0] ? lines[0].substring(0, 50) : "Software Engineer Role";
+  return "Software Engineer Role";
 };
 
 const buildFallbackEmail = ({ jobRequirement, recruiterName }) => {
   const userName = process.env.USER_NAME || "Rahul Prasad";
-  const userRole = process.env.USER_ROLE || "Full Stack Developer";
-  const userSkills = process.env.USER_SKILLS || "Node.js, Express, React, MongoDB";
+  const userRole = "Software Engineer"; // Default fallback since DB isn't used here
+  const userSkills = "my core technical skills"; // Default fallback
   const targetRole = extractTargetRole(jobRequirement);
 
   const subject = `Application for ${targetRole} - ${userName}`;
@@ -64,18 +71,37 @@ const parseGeneratedEmail = (responseText, context) => {
 
 const generateEmail = async ({ jobRequirement, recruiterName }) => {
   const userName = process.env.USER_NAME || "Rahul Prasad";
-  const userRole = process.env.USER_ROLE || "Full Stack Developer";
-  const userSkills = process.env.USER_SKILLS || "Node.js, Express, React, MongoDB, JavaScript";
-  const userResumeSummary = process.env.USER_RESUME_SUMMARY || "Experienced full stack software engineer.";
-
+  
   if (!process.env.GEMINI_API_KEY) {
     return buildFallbackEmail({ jobRequirement, recruiterName });
+  }
+
+  // Fetch comprehensive background from MongoDB to make the email ultra-relevant
+  let backgroundContext = "Experienced full stack software engineer.";
+  let projectsContext = "";
+
+  try {
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      // 1. Get Master Resume for core skills and experience
+      const dbResume = await MasterResume.findOne({ isDefault: true });
+      if (dbResume && dbResume.latexContent) {
+        backgroundContext = `Here is my Master Resume (in LaTeX format) showing my complete work history and skills:\n${dbResume.latexContent.substring(0, 2000)}`;
+      }
+
+      // 2. Get Featured Projects
+      const dbProjects = await ProjectReadme.find({ isFeatured: { $ne: false } });
+      if (dbProjects && dbProjects.length > 0) {
+        projectsContext = "Here is a list of my key projects:\n" + dbProjects.map(p => `Project: ${p.title}\nDetails: ${p.content ? p.content.substring(0, 500) : "No details"}`).join("\n\n");
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch comprehensive DB data for email, falling back to basic context:", err.message);
   }
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.6-flash",
+      model: GEMINI_MODEL,
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 800,
@@ -85,16 +111,24 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
     const prompt = [
       "You are an AI assistant writing a personalized, compelling job outreach email.",
       `Sender Name: ${userName}`,
-      `Sender Current Role: ${userRole}`,
-      `Sender Skills: ${userSkills}`,
-      `Sender Profile Summary: ${userResumeSummary}`,
       `Recipient Name: ${recruiterName || "Hiring Manager"}`,
       `Job Requirements / Job Description:`,
-      `"""${jobRequirement || "Full Stack Developer Position"}"""`,
-      "Write a professional, targeted, and concise cold outreach email tailored specifically to match the job requirement provided.",
+      `"""${jobRequirement || "Software Engineer Position"}"""`,
+      "",
+      "--- SENDER's BACKGROUND & DATA ---",
+      "Use the following up-to-date data about the sender to perfectly match the job description.",
+      "Extract the most relevant skills and 1-2 projects that fit the job requirement.",
+      "",
+      backgroundContext,
+      "",
+      projectsContext,
+      "--- END OF SENDER'S DATA ---",
+      "",
+      "Write a professional, targeted, and concise cold outreach email tailored specifically to match the job requirement.",
+      "Highlight specific projects or skills from the data provided above that match the job description.",
       "Tone: Professional, direct, and human. Avoid fluff, aggressive sales pitches, or emojis.",
-      "Do NOT include sign-offs (e.g., 'Best regards', sender name) or signature links (LinkedIn, GitHub, LeetCode, Resume) in the email body, as the formal signature is appended automatically upon dispatch.",
-      'Return ONLY valid JSON with exactly two keys: "subject" and "body". Example: {"subject": "...", "body": "..."}',
+      "Do NOT include sign-offs (e.g., 'Best regards', sender name) or signature links (LinkedIn, GitHub) in the email body, as the formal signature is appended automatically upon dispatch.",
+      'Return ONLY valid JSON with exactly two keys: "subject" and "body". Example: {"subject": "...", "body": "..."}'
     ].join("\n");
 
     const result = await model.generateContent(prompt);
@@ -272,7 +306,6 @@ const parseCategorizationResponse = (responseText, context) => {
 
 const categorizeEmailContent = async ({ emailText, subject = "", senderName = "", senderEmail = "" }) => {
   const userName = process.env.USER_NAME || "Rahul Prasad";
-  const userRole = process.env.USER_ROLE || "Full Stack Developer";
 
   if (!emailText || !emailText.trim()) {
     throw new Error("Email content is required for categorization");
@@ -285,7 +318,7 @@ const categorizeEmailContent = async ({ emailText, subject = "", senderName = ""
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: GEMINI_MODEL,
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
@@ -295,7 +328,7 @@ const categorizeEmailContent = async ({ emailText, subject = "", senderName = ""
 
     const prompt = `
 You are an expert AI Email Analyst and Triage Officer.
-Analyze the following email received by ${userName} (${userRole}).
+Analyze the following email received by ${userName}.
 
 Sender Name: ${senderName || "Unknown"}
 Sender Email: ${senderEmail || "Unknown"}
@@ -363,7 +396,7 @@ const generateCustomReply = async ({ emailText, subject, senderName, replyIntent
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: GEMINI_MODEL,
       generationConfig: {
         temperature: 0.6,
         maxOutputTokens: 500,
