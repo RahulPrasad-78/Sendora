@@ -318,8 +318,13 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
   try {
     // Quick check if xelatex exists before invoking full build
     execSync("xelatex --version", { stdio: "pipe", timeout: 3000 });
-    const cmd = `xelatex -interaction=nonstopmode --enable-installer -output-directory="${TEMP_DIR}" "${texPath}"`;
+    // --enable-installer is MiKTeX-only (Windows). On TeX Live (Linux/Docker), it causes errors.
+    const isWindows = process.platform === "win32";
+    const installerFlag = isWindows ? " --enable-installer" : "";
+    const cmd = `xelatex -interaction=nonstopmode${installerFlag} -output-directory="${TEMP_DIR}" "${texPath}"`;
+    console.log(`[XELATEX] Compiling: ${cmd}`);
     execSync(cmd, { cwd: TEMP_DIR, timeout: 60000, stdio: "pipe" });
+    console.log("[XELATEX] Compilation finished successfully");
 
     const pdfPath = path.join(TEMP_DIR, `${jobId}.pdf`);
     if (!fs.existsSync(pdfPath)) {
