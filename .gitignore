@@ -71,7 +71,6 @@ dist-electron
 .DS_Store
 Thumbs.db
 
-# User Resume / Personal Data (Optional but recommended to keep out of public repos)
-# resume.pdf
-# resume.txt
-# resume.docx
+interview_answers.pdf
+interview_questions.pdf
+

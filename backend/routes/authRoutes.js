@@ -1,12 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { isOwnerAuthorized } = require("../middleware/authMiddleware");
+const { isOwnerAuthorized, getOwnerPasscode } = require("../middleware/authMiddleware");
 
 // POST /api/auth/verify-owner
 // Checks submitted passcode against server environment
 router.post("/verify-owner", (req, res) => {
   const { passcode } = req.body;
-  const configuredPasscode = process.env.OWNER_PASSCODE || process.env.OWNER_SECRET_KEY || "SendoraOwner2026";
+  const configuredPasscode = getOwnerPasscode();
+
+  if (!configuredPasscode) {
+    return res.status(503).json({
+      success: false,
+      message: "Owner Mode is not configured on this server. Set OWNER_PASSCODE in the environment to enable it.",
+    });
+  }
 
   if (!passcode) {
     return res.status(400).json({ success: false, message: "Passcode is required." });
