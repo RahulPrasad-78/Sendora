@@ -84,7 +84,8 @@ const sendRecruiterEmail = async (req, res) => {
   try {
     if (attachResume) {
       if (resumeMode === "existing" && selectedResumeId) {
-        // Fetch from MongoDB
+        // Fetch from MongoDB — should be instant
+        console.log(`[SEND] Using EXISTING resume: ${selectedResumeId}`);
         const existingResume = await TailoredResume.findById(selectedResumeId);
         if (existingResume && existingResume.pdfBase64) {
           const pdfBuffer = Buffer.from(existingResume.pdfBase64, "base64");
@@ -96,6 +97,7 @@ const sendRecruiterEmail = async (req, res) => {
           });
           attachedResumeTitle = existingResume.title || filename;
           attachedResumeId = existingResume._id;
+          console.log(`[SEND] Existing resume loaded (${Math.round(pdfBuffer.length / 1024)}KB)`);
         }
       } else if (resumeMode === "new") {
         if (newResumeData && newResumeData.pdfBase64) {
@@ -141,6 +143,8 @@ const sendRecruiterEmail = async (req, res) => {
       }
     }
 
+    console.log(`[SEND] Dispatching email to ${recruiterEmail} (${attachments.length} attachments)...`);
+    const sendStart = Date.now();
     const mailResult = await sendEmail({
       to: recruiterEmail,
       subject,
@@ -153,6 +157,7 @@ const sendRecruiterEmail = async (req, res) => {
       attachments,
       attachedResumeName: attachedResumeTitle,
     });
+    console.log(`[SEND] Email dispatched in ${Date.now() - sendStart}ms`);
 
     const { emailLog } = await createEmailLogRecord({
       recruiterName,
