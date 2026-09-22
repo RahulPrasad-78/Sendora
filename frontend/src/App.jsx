@@ -121,6 +121,7 @@ export default function App() {
         setSavedResumes(list);
         if (list.length > 0 && !selectedResumeId) {
           setSelectedResumeId(list[0]._id);
+          setResumeMode("existing"); // Auto-select existing to save time!
         }
       }
     } catch (err) {
