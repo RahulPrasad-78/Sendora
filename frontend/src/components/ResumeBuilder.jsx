@@ -80,7 +80,7 @@ export default function ResumeBuilder({
     let isMounted = true;
     async function checkStatus() {
       try {
-        const res = await fetch("/api/resumes/status");
+        const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/status");
         if (res.ok && isMounted) {
           const data = await res.json();
           setKbStatus(data);
@@ -109,7 +109,7 @@ export default function ResumeBuilder({
     const t3 = setTimeout(() => setStage(STAGES.SAVING), 5000);
 
     try {
-      const res = await fetch("/api/resumes/generate", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +222,7 @@ export default function ResumeBuilder({
     setIsRecompiling(true);
     try {
       const resumeId = currentResume?._id || "draft";
-      const res = await fetch(`/api/resumes/${resumeId}`, {
+      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${resumeId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -273,7 +273,7 @@ export default function ResumeBuilder({
   // Preview Saved Resume from List
   const handleSelectSavedResume = async (item, targetMode = "pdf") => {
     try {
-      const res = await fetch(`/api/resumes/${item._id}`);
+      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${item._id}`);
       if (!res.ok) throw new Error("Failed to load resume details");
       const fullResume = await res.json();
       setCurrentResume(fullResume);
@@ -318,7 +318,7 @@ export default function ResumeBuilder({
 
     if (!confirm("Are you sure you want to delete this saved resume from MongoDB?")) return;
     try {
-      const res = await fetch(`/api/resumes/${id}`, {
+      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${id}`, {
         method: "DELETE",
         headers: { "x-owner-key": ownerToken },
       });
