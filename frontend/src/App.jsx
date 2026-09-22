@@ -99,7 +99,7 @@ export default function App() {
   const fetchOutreachLogs = async () => {
     setIsLoadingOutreachLogs(true);
     try {
-      const res = await fetch("/api/emails");
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails");
       if (res.ok) {
         const data = await res.json();
         setOutreachLogs(Array.isArray(data) ? data : []);
@@ -114,7 +114,7 @@ export default function App() {
   // Fetch Saved Resumes from MongoDB
   const fetchSavedResumes = async () => {
     try {
-      const res = await fetch("/api/resumes");
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes");
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
@@ -130,7 +130,7 @@ export default function App() {
 
   useEffect(() => {
     // Check backend health first — show warning if server is not running
-    fetch("/api/health")
+    fetch("https://sendora-backend-bvq2.onrender.com/api/health")
       .then((r) => { if (!r.ok) throw new Error("not ok"); setBackendDown(false); })
       .catch(() => setBackendDown(true));
 
@@ -146,7 +146,7 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch("/api/auth/status", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/auth/status", {
         headers: { "x-owner-key": token },
       });
       if (res.ok) {
@@ -168,7 +168,7 @@ export default function App() {
     setOwnerAuthError("");
 
     try {
-      const res = await fetch("/api/auth/verify-owner", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/auth/verify-owner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ passcode: ownerPasscodeInput.trim() }),
@@ -214,7 +214,7 @@ export default function App() {
 
     setIsBuildingOutreachResume(true);
     try {
-      const res = await fetch("/api/resumes/generate", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -274,7 +274,7 @@ export default function App() {
     setStatusMessage(null);
 
     try {
-      const res = await fetch("/api/emails/generate", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -332,7 +332,7 @@ export default function App() {
     setStatusMessage(null);
 
     try {
-      const res = await fetch("/api/emails/send", {
+      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
