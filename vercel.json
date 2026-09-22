@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://CHANGE_ME_TO_YOUR_GOOGLE_CLOUD_RUN_URL/api/$1"
+      "destination": "https://sendora-backend-bvq2.onrender.com/api/$1"
     },
     {
       "source": "/api",
-      "destination": "https://CHANGE_ME_TO_YOUR_GOOGLE_CLOUD_RUN_URL/api"
+      "destination": "https://sendora-backend-bvq2.onrender.com/api"
     },
     {
       "source": "/((?!api).*)",
