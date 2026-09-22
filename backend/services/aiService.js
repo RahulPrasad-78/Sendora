@@ -26,15 +26,11 @@ const buildFallbackEmail = ({ jobRequirement, recruiterName }) => {
   const targetRole = extractTargetRole(jobRequirement);
 
   const subject = `Application for ${targetRole} - ${userName}`;
-  const summary = (jobRequirement || "").trim().substring(0, 200);
 
   const body = [
     `Hi ${recruiterName || "Hiring Manager"},`,
     "",
     `I am writing to express my enthusiastic interest in the ${targetRole} position.`,
-    "",
-    `Having reviewed your job requirements:`,
-    `"${summary}${jobRequirement && jobRequirement.length > 200 ? "..." : ""}"`,
     "",
     `With my strong expertise as a ${userRole} specializing in ${userSkills}, I am confident in my capability to contribute effectively to your engineering goals and deliver impactful results.`,
     "",
