@@ -1,7 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { execSync } = require("child_process");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+
+const execFileAsync = promisify(execFile);
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const os = require("os");
@@ -128,6 +131,23 @@ async function readAllReadmes() {
   return defaultContents;
 }
 
+// Cached for a minute so public status polling never spawns a process per request.
+let xelatexCheck = { at: 0, value: null };
+async function isXelatexInstalled() {
+  if (xelatexCheck.value !== null && Date.now() - xelatexCheck.at < 60000) {
+    return xelatexCheck.value;
+  }
+  let value = false;
+  try {
+    await execFileAsync("xelatex", ["--version"], { timeout: 5000 });
+    value = true;
+  } catch {
+    value = false;
+  }
+  xelatexCheck = { at: Date.now(), value };
+  return value;
+}
+
 /**
  * Returns knowledge base stats and tool status (MongoDB + local disk).
  */
@@ -159,13 +179,7 @@ async function getKnowledgeBaseStatus() {
       .filter((f) => f.toLowerCase().endsWith(".md"));
   }
 
-  let xelatexInstalled = false;
-  try {
-    execSync("xelatex --version", { stdio: "pipe", timeout: 5000 });
-    xelatexInstalled = true;
-  } catch {
-    xelatexInstalled = false;
-  }
+  const xelatexInstalled = await isXelatexInstalled();
 
   return {
     resumeLoaded: dbResumeLoaded || resumeExists || Boolean(DEFAULT_MASTER_LATEX),
@@ -284,20 +298,57 @@ Now tailor this resume specifically for the job description above with EXACTLY $
   }
 }
 
+// LaTeX primitives that read/write arbitrary files or alter catcodes. The LaTeX is
+// AI-generated from untrusted job descriptions, so it must never reach the compiler with these.
+const FORBIDDEN_LATEX = /\\(?:input|include|openin|openout|read|readline|write|immediate|catcode|csname|usepackage\s*\{[^}]*shellesc[^}]*\}|verbatiminput|lstinputlisting|InputIfFileExists)\b/;
+
+const MAX_CONCURRENT_COMPILES = 2;
+let activeCompiles = 0;
+const compileQueue = [];
+
+function acquireCompileSlot() {
+  if (activeCompiles < MAX_CONCURRENT_COMPILES) {
+    activeCompiles += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => compileQueue.push(resolve));
+}
+
+function releaseCompileSlot() {
+  const next = compileQueue.shift();
+  if (next) next();
+  else activeCompiles -= 1;
+}
+
 /**
  * Compiles a LaTeX string to a PDF buffer using XeLaTeX.
  * Dynamically provides the .cls definition from MongoDB, override, disk, or default template.
  */
-function compileLatexToPdf(latexContent, clsContentOverride) {
+async function compileLatexToPdf(latexContent, clsContentOverride) {
+  if (FORBIDDEN_LATEX.test(latexContent)) {
+    throw new Error("LaTeX contains disallowed commands (file access or low-level primitives).");
+  }
+  await acquireCompileSlot();
+  try {
+    return await runXelatex(latexContent, clsContentOverride);
+  } finally {
+    releaseCompileSlot();
+  }
+}
+
+async function runXelatex(latexContent, clsContentOverride) {
   const jobId = crypto.randomUUID();
-  const texPath = path.join(TEMP_DIR, `${jobId}.tex`);
+  // Each job compiles in its own directory so concurrent jobs and user-chosen
+  // class names can never collide or leak into each other.
+  const jobDir = fs.mkdtempSync(path.join(TEMP_DIR, "job-"));
+  const texPath = path.join(jobDir, `${jobId}.tex`);
 
   // Detect documentclass name (e.g. \documentclass[]{kyvernitis-resume} -> kyvernitis-resume.cls)
   const docClassMatch = latexContent.match(/\\documentclass(?:\[[^\]]*\])?\{([^}]+)\}/);
   const requestedClass = docClassMatch && docClassMatch[1] ? docClassMatch[1].trim() : "";
   // Only allow plain class names: blocks path traversal like \documentclass{../../x}
   const clsFileName = /^[A-Za-z0-9_-]+$/.test(requestedClass) ? `${requestedClass}.cls` : "kyvernitis-resume.cls";
-  const clsDst = path.join(TEMP_DIR, clsFileName);
+  const clsDst = path.join(jobDir, clsFileName);
 
   // Write cls definition directly into compilation directory
   let clsText = clsContentOverride;
@@ -314,32 +365,34 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
   fs.writeFileSync(texPath, latexContent, "utf-8");
 
   try {
-    // Quick check if xelatex exists before invoking full build
-    execSync("xelatex --version", { stdio: "pipe", timeout: 3000 });
+    if (!(await isXelatexInstalled())) {
+      throw new Error("xelatex is not installed on this server.");
+    }
+    // openin_any/openout_any=p (set in env below) restrict TeX file access to the working dir.
+    const args = ["-interaction=nonstopmode", "-no-shell-escape", `-output-directory=${jobDir}`, texPath];
     // --enable-installer is MiKTeX-only (Windows). On TeX Live (Linux/Docker), it causes errors.
-    const isWindows = process.platform === "win32";
-    const installerFlag = isWindows ? " --enable-installer" : "";
-    const cmd = `xelatex -interaction=nonstopmode -no-shell-escape${installerFlag} -output-directory="${TEMP_DIR}" "${texPath}"`;
-    console.log(`[XELATEX] Compiling: ${cmd}`);
-    execSync(cmd, { cwd: TEMP_DIR, timeout: 60000, stdio: "pipe" });
+    if (process.platform === "win32") args.unshift("--enable-installer");
+    console.log(`[XELATEX] Compiling job ${jobId}`);
+    await execFileAsync("xelatex", args, {
+      cwd: jobDir,
+      timeout: 60000,
+      killSignal: "SIGKILL",
+      maxBuffer: 10 * 1024 * 1024,
+      env: { ...process.env, openin_any: "p", openout_any: "p", shell_escape: "f" },
+    });
     console.log("[XELATEX] Compilation finished successfully");
 
-    const pdfPath = path.join(TEMP_DIR, `${jobId}.pdf`);
+    const pdfPath = path.join(jobDir, `${jobId}.pdf`);
     if (!fs.existsSync(pdfPath)) {
       throw new Error("PDF file was not produced by XeLaTeX compiler.");
     }
 
     const pdfBuffer = fs.readFileSync(pdfPath);
-
-    // Clean up temp files asynchronously
-    setTimeout(() => {
-      cleanupJobFiles(jobId);
-    }, 4000);
-
+    cleanupJobDir(jobDir);
     return { pdfBuffer, jobId };
   } catch (err) {
     // Attempt to extract helpful error from log file
-    const logPath = path.join(TEMP_DIR, `${jobId}.log`);
+    const logPath = path.join(jobDir, `${jobId}.log`);
     let logSnippet = err.message;
     if (fs.existsSync(logPath)) {
       const logContent = fs.readFileSync(logPath, "utf-8");
@@ -351,31 +404,15 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
       if (errLines) logSnippet = errLines;
     }
 
-    cleanupJobFiles(jobId);
+    cleanupJobDir(jobDir);
     throw new Error(`XeLaTeX compilation failed: ${logSnippet}`);
   }
 }
 
-function cleanupJobFiles(jobId) {
-  const exts = [
-    ".tex",
-    ".pdf",
-    ".aux",
-    ".log",
-    ".out",
-    ".fls",
-    ".fdb_latexmk",
-    ".synctex.gz",
-    ".xdv",
-  ];
-  for (const ext of exts) {
-    const p = path.join(TEMP_DIR, `${jobId}${ext}`);
-    if (fs.existsSync(p)) {
-      try {
-        fs.unlinkSync(p);
-      } catch {}
-    }
-  }
+function cleanupJobDir(jobDir) {
+  try {
+    fs.rmSync(jobDir, { recursive: true, force: true });
+  } catch {}
 }
 
 /**
@@ -444,7 +481,7 @@ function extractResumeMeta(jobDescription, latexContent, knownReadmes = {}) {
     for (const key of Object.keys(knownReadmes)) {
       const cleanName = key.replace(/\.md$/i, "").replace(/[-_]/g, " ").trim();
       const firstWord = cleanName.split(" ")[0];
-      if (firstWord && firstWord.length > 2 && new RegExp(`\\b${firstWord}\\b`, "i").test(latexContent)) {
+      if (firstWord && firstWord.length > 2 && new RegExp(`\\b${firstWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(latexContent)) {
         if (!selectedProjects.includes(cleanName)) {
           selectedProjects.push(cleanName);
         }
@@ -506,7 +543,7 @@ async function buildTailoredResume({ jobDescription, projectCount = 2 }) {
   let compileNotice = null;
 
   try {
-    const compiled = compileLatexToPdf(tailoredLatex, baseCls);
+    const compiled = await compileLatexToPdf(tailoredLatex, baseCls);
     pdfBuffer = compiled.pdfBuffer;
     pdfBase64 = pdfBuffer.toString("base64");
   } catch (compileErr) {

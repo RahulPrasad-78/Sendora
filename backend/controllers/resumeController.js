@@ -206,7 +206,7 @@ const updateAndRecompileResume = async (req, res) => {
     let pdfBase64 = null;
     let compileNotice = null;
     try {
-      const compiled = compileLatexToPdf(latexContent, baseCls);
+      const compiled = await compileLatexToPdf(latexContent, baseCls);
       if (compiled && compiled.pdfBuffer) {
         pdfBase64 = compiled.pdfBuffer.toString("base64");
       }
@@ -231,7 +231,7 @@ const updateAndRecompileResume = async (req, res) => {
       for (const key of Object.keys(readmes)) {
         const cleanName = key.replace(/\.md$/i, "").replace(/[-_]/g, " ").trim();
         const firstWord = cleanName.split(" ")[0];
-        if (firstWord && firstWord.length > 2 && new RegExp(`\\b${firstWord}\\b`, "i").test(latexContent)) {
+        if (firstWord && firstWord.length > 2 && new RegExp(`\\b${firstWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(latexContent)) {
           if (!selectedProjects.includes(cleanName)) selectedProjects.push(cleanName);
         }
       }

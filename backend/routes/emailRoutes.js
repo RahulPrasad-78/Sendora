@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post("/generate", aiLimiter, generateAIResponse);
 router.post("/send", requireOwner, sendRecruiterEmail);
-router.get("/", getEmailLogs);
+router.get("/", requireOwner, getEmailLogs);
 router.post("/", requireOwner, createEmailLog);
 
 module.exports = router;

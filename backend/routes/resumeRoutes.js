@@ -17,7 +17,7 @@ router.post("/generate", aiLimiter, generateResume);
 router.post("/recompile", requireOwner, updateAndRecompileResume);
 router.put("/:id", requireOwner, updateAndRecompileResume);
 router.get("/status", getResumeStatus);
-router.get("/", getResumes);
+router.get("/", requireOwner, getResumes);
 router.get("/:id", getResumeById);
 router.get("/:id/pdf", downloadResumePdf);
 router.delete("/:id", requireOwner, deleteResume);

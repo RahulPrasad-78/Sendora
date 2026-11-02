@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API } from "./api";
 import {
   Send,
   Sparkles,
@@ -79,10 +80,14 @@ export default function App() {
   const [backendDown, setBackendDown] = useState(false);
 
   // Fetch Outreach Logs
-  const fetchOutreachLogs = async () => {
+  const fetchOutreachLogs = async (token = ownerToken) => {
+    if (!token) {
+      setOutreachLogs([]);
+      return;
+    }
     setIsLoadingOutreachLogs(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails");
+      const res = await fetch(`${API}/emails`, { headers: { "x-owner-key": token } });
       if (res.ok) {
         const data = await res.json();
         setOutreachLogs(Array.isArray(data) ? data : []);
@@ -95,9 +100,13 @@ export default function App() {
   };
 
   // Fetch Saved Resumes from MongoDB
-  const fetchSavedResumes = async () => {
+  const fetchSavedResumes = async (token = ownerToken) => {
+    if (!token) {
+      setSavedResumes([]);
+      return;
+    }
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes");
+      const res = await fetch(`${API}/resumes`, { headers: { "x-owner-key": token } });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
@@ -114,7 +123,7 @@ export default function App() {
 
   useEffect(() => {
     // Check backend health first — show warning if server is not running
-    fetch("https://sendora-backend-bvq2.onrender.com/api/health")
+    fetch(`${API}/health`)
       .then((r) => { if (!r.ok) throw new Error("not ok"); setBackendDown(false); })
       .catch(() => setBackendDown(true));
 
@@ -130,7 +139,7 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/auth/status", {
+      const res = await fetch(`${API}/auth/status`, {
         headers: { "x-owner-key": token },
       });
       if (res.ok) {
@@ -152,7 +161,7 @@ export default function App() {
     setOwnerAuthError("");
 
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/auth/verify-owner", {
+      const res = await fetch(`${API}/auth/verify-owner`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ passcode: ownerPasscodeInput.trim() }),
@@ -166,6 +175,8 @@ export default function App() {
       setOwnerToken(token);
       localStorage.setItem("sendora_owner_token", token);
       setIsOwner(true);
+      fetchOutreachLogs(token);
+      fetchSavedResumes(token);
       setIsOwnerModalOpen(false);
       setOwnerPasscodeInput("");
       setStatusMessage({
@@ -198,7 +209,7 @@ export default function App() {
 
     setIsBuildingOutreachResume(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/generate", {
+      const res = await fetch(`${API}/resumes/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -258,7 +269,7 @@ export default function App() {
     setStatusMessage(null);
 
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails/generate", {
+      const res = await fetch(`${API}/emails/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -316,7 +327,7 @@ export default function App() {
     setStatusMessage(null);
 
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/emails/send", {
+      const res = await fetch(`${API}/emails/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -651,7 +662,7 @@ export default function App() {
                                 <CheckCircle2 size={15} /> Ready: "{generatedNewResume.title}"
                                 {generatedNewResume._id && !generatedNewResume._id.startsWith("mem_") && (
                                   <a
-                                    href={`/api/resumes/${generatedNewResume._id}/pdf`}
+                                    href={`${API}/resumes/${generatedNewResume._id}/pdf`}
                                     target="_blank"
                                     rel="noreferrer"
                                     style={{ color: "var(--text-main)", fontWeight: "700", textDecoration: "underline", marginLeft: "4px" }}
@@ -691,7 +702,7 @@ export default function App() {
                                 </select>
                                 {selectedResumeId && (
                                   <a
-                                    href={`/api/resumes/${selectedResumeId}/pdf`}
+                                    href={`${API}/resumes/${selectedResumeId}/pdf`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="btn-secondary"
@@ -907,7 +918,7 @@ export default function App() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={fetchOutreachLogs}
+                onClick={() => fetchOutreachLogs()}
               >
                 <RefreshCw size={14} /> Refresh
               </button>
@@ -977,7 +988,7 @@ export default function App() {
       {activeTab === "resumes" && (
         <ResumeBuilder
           savedResumes={savedResumes}
-          onRefreshResumes={fetchSavedResumes}
+          onRefreshResumes={() => fetchSavedResumes()}
           onApplyInSendMail={handleApplyResumeFromBuilder}
           setStatusMessage={setStatusMessage}
           isOwner={isOwner}

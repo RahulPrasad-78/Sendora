@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API } from "../api";
 import {
   Database,
   Plus,
@@ -131,7 +132,7 @@ export default function KnowledgeBaseManager({
   const fetchProjects = async () => {
     setIsLoadingProjects(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/knowledge/projects");
+      const res = await fetch(`${API}/knowledge/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(Array.isArray(data) ? data : []);
@@ -148,7 +149,7 @@ export default function KnowledgeBaseManager({
   const fetchMasterResume = async () => {
     setIsLoadingResume(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/knowledge/master-resume");
+      const res = await fetch(`${API}/knowledge/master-resume`);
       if (res.ok) {
         const data = await res.json();
         if (data) setMasterResume(data);
@@ -226,8 +227,8 @@ export default function KnowledgeBaseManager({
 
     try {
       const url = editingProjectId
-        ? `/api/knowledge/projects/${editingProjectId}`
-        : "/api/knowledge/projects";
+        ? `${API}/knowledge/projects/${editingProjectId}`
+        : `${API}/knowledge/projects`;
       const method = editingProjectId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -267,7 +268,7 @@ export default function KnowledgeBaseManager({
     }
 
     try {
-      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/knowledge/projects/${id}`, {
+      const res = await fetch(`${API}/knowledge/projects/${id}`, {
         method: "DELETE",
         headers: { "x-owner-key": ownerToken },
       });
@@ -294,7 +295,7 @@ export default function KnowledgeBaseManager({
 
     const updatedStatus = !proj.isFeatured;
     try {
-      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/knowledge/projects/${proj._id}`, {
+      const res = await fetch(`${API}/knowledge/projects/${proj._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -330,7 +331,7 @@ export default function KnowledgeBaseManager({
 
     setIsImportingGithub(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/knowledge/projects/github-import", {
+      const res = await fetch(`${API}/knowledge/projects/github-import`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -372,7 +373,7 @@ export default function KnowledgeBaseManager({
 
     setIsSavingResume(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/knowledge/master-resume", {
+      const res = await fetch(`${API}/knowledge/master-resume`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -416,7 +417,7 @@ export default function KnowledgeBaseManager({
 
     setIsResettingResume(true);
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/knowledge/master-resume/reset", {
+      const res = await fetch(`${API}/knowledge/master-resume/reset`, {
         method: "POST",
         headers: { "x-owner-key": ownerToken },
       });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API } from "../api";
 import {
   FileText,
   Sparkles,
@@ -80,7 +81,7 @@ export default function ResumeBuilder({
     let isMounted = true;
     async function checkStatus() {
       try {
-        const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/status");
+        const res = await fetch(`${API}/resumes/status`);
         if (res.ok && isMounted) {
           const data = await res.json();
           setKbStatus(data);
@@ -109,7 +110,7 @@ export default function ResumeBuilder({
     const t3 = setTimeout(() => setStage(STAGES.SAVING), 5000);
 
     try {
-      const res = await fetch("https://sendora-backend-bvq2.onrender.com/api/resumes/generate", {
+      const res = await fetch(`${API}/resumes/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +223,7 @@ export default function ResumeBuilder({
     setIsRecompiling(true);
     try {
       const resumeId = currentResume?._id || "draft";
-      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${resumeId}`, {
+      const res = await fetch(`${API}/resumes/${resumeId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -273,7 +274,7 @@ export default function ResumeBuilder({
   // Preview Saved Resume from List
   const handleSelectSavedResume = async (item, targetMode = "pdf") => {
     try {
-      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${item._id}`);
+      const res = await fetch(`${API}/resumes/${item._id}`);
       if (!res.ok) throw new Error("Failed to load resume details");
       const fullResume = await res.json();
       setCurrentResume(fullResume);
@@ -318,7 +319,7 @@ export default function ResumeBuilder({
 
     if (!confirm("Are you sure you want to delete this saved resume from MongoDB?")) return;
     try {
-      const res = await fetch(`https://sendora-backend-bvq2.onrender.com/api/resumes/${id}`, {
+      const res = await fetch(`${API}/resumes/${id}`, {
         method: "DELETE",
         headers: { "x-owner-key": ownerToken },
       });
@@ -959,7 +960,7 @@ export default function ResumeBuilder({
                           <Code size={13} />
                         </button>
                         <a
-                          href={`/api/resumes/${item._id}/pdf`}
+                          href={`${API}/resumes/${item._id}/pdf`}
                           target="_blank"
                           rel="noreferrer"
                           className="btn-secondary"

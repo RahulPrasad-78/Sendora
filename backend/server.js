@@ -56,7 +56,11 @@ app.use("/api", apiRouter);
 // Global error handler — ensures no request ever returns an empty body
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({ message: err.message || "Internal server error" });
+  const status = err.status || err.statusCode || 500;
+  const message = status >= 500 && process.env.NODE_ENV === "production"
+    ? "Internal server error"
+    : err.message || "Internal server error";
+  res.status(status).json({ message });
 });
 
 const PORT = process.env.PORT || 7000;
