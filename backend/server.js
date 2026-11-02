@@ -15,7 +15,7 @@ const authRoutes = require("./routes/authRoutes");
 const app = express();
 
 // Behind Render/Vercel proxies, so req.ip (used by rate limiting) is the real client
-app.set("trust proxy", 1);
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
 // CORS_ORIGIN: comma-separated list of allowed frontend origins (e.g. your Vercel URL).
 // Unset = allow all origins (fine for local dev only).
@@ -24,10 +24,20 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .map((o) => o.trim())
   .filter(Boolean);
 if (allowedOrigins.length === 0) {
-  console.warn("Notice: CORS_ORIGIN is not set. Allowing requests from any origin.");
+  if (process.env.NODE_ENV === "production") {
+    console.error("CORS_ORIGIN is not set in production. Cross-origin browser requests will be rejected.");
+  } else {
+    console.warn("Notice: CORS_ORIGIN is not set. Allowing requests from any origin (dev only).");
+  }
 }
-app.use(cors(allowedOrigins.length > 0 ? { origin: allowedOrigins } : undefined));
-app.use(express.json({ limit: "15mb" }));
+app.use(
+  cors(
+    allowedOrigins.length > 0
+      ? { origin: allowedOrigins }
+      : { origin: process.env.NODE_ENV !== "production" }
+  )
+);
+app.use(express.json({ limit: "2mb" }));
 
 connectDB();
 

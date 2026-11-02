@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const CategorizedEmail = require("../models/CategorizedEmail");
 const { categorizeEmailContent, generateCustomReply } = require("../services/aiService");
 const { sendEmail } = require("../services/emailService");
+const connectDB = require("../config/db");
 
 // In-memory cache fallback if MongoDB is not connected
 let memoryCategorizedStore = [];
@@ -38,10 +40,11 @@ const categorizeEmail = async (req, res) => {
     };
 
     let savedRecord = null;
-    try {
+    if (connectDB.isConnected()) {
+      // Real DB errors (validation etc.) propagate to the outer handler instead of being hidden.
       savedRecord = await CategorizedEmail.create(emailPayload);
-    } catch (dbError) {
-      console.warn("MongoDB write warning, using in-memory store:", dbError.message);
+    } else {
+      console.warn("MongoDB not connected, using in-memory store.");
       savedRecord = {
         _id: "mem_" + Date.now(),
         ...emailPayload,
@@ -84,15 +87,15 @@ const getCategorizedEmails = async (req, res) => {
     }
 
     let emails = [];
-    try {
+    if (connectDB.isConnected()) {
       emails = await CategorizedEmail.find(filter).sort({ createdAt: -1 }).limit(100);
-    } catch (dbError) {
+    } else {
       emails = memoryCategorizedStore;
       if (category && category !== "All") emails = emails.filter((e) => e.category === category);
       if (priority && priority !== "All") emails = emails.filter((e) => e.priority === priority);
       if (status && status !== "All") emails = emails.filter((e) => e.status === status);
       if (search) {
-        const s = search.toLowerCase();
+        const s = String(search).toLowerCase();
         emails = emails.filter(
           (e) =>
             (e.subject && e.subject.toLowerCase().includes(s)) ||
@@ -104,7 +107,8 @@ const getCategorizedEmails = async (req, res) => {
 
     return res.status(200).json(emails);
   } catch (error) {
-    return res.status(200).json(memoryCategorizedStore);
+    console.error("Failed to load categorized emails:", error);
+    return res.status(500).json({ message: "Failed to load categorized emails" });
   }
 };
 
@@ -118,22 +122,23 @@ const updateEmailStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    try {
-      const updated = await CategorizedEmail.findByIdAndUpdate(
-        id,
-        { status },
-        { new: true }
-      );
-      if (updated) return res.status(200).json(updated);
-    } catch (dbErr) {
-      const idx = memoryCategorizedStore.findIndex((e) => e._id === id);
-      if (idx !== -1) {
-        memoryCategorizedStore[idx].status = status;
-        return res.status(200).json(memoryCategorizedStore[idx]);
-      }
+    const memIdx = memoryCategorizedStore.findIndex((e) => e._id === id);
+    if (memIdx !== -1) {
+      memoryCategorizedStore[memIdx].status = status;
+      return res.status(200).json(memoryCategorizedStore[memIdx]);
     }
 
-    return res.status(200).json({ message: "Status updated", status });
+    if (!connectDB.isConnected()) {
+      return res.status(503).json({ message: "Database unavailable" });
+    }
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid email id" });
+    }
+    const updated = await CategorizedEmail.findByIdAndUpdate(id, { status }, { new: true });
+    if (!updated) {
+      return res.status(404).json({ message: "Email record not found" });
+    }
+    return res.status(200).json(updated);
   } catch (error) {
     return res.status(500).json({ message: "Failed to update status", error: error.message });
   }
@@ -142,10 +147,15 @@ const updateEmailStatus = async (req, res) => {
 const deleteCategorizedEmail = async (req, res) => {
   try {
     const { id } = req.params;
-    try {
-      await CategorizedEmail.findByIdAndDelete(id);
-    } catch (dbErr) {
+    if (memoryCategorizedStore.some((e) => e._id === id)) {
       memoryCategorizedStore = memoryCategorizedStore.filter((e) => e._id !== id);
+    } else if (!connectDB.isConnected()) {
+      return res.status(503).json({ message: "Database unavailable" });
+    } else if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid email id" });
+    } else {
+      const deleted = await CategorizedEmail.findByIdAndDelete(id);
+      if (!deleted) return res.status(404).json({ message: "Email record not found" });
     }
     return res.status(200).json({ message: "Email record deleted successfully" });
   } catch (error) {

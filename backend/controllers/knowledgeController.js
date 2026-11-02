@@ -219,7 +219,11 @@ const importFromGitHub = async (req, res) => {
       return res.status(400).json({ message: "Invalid GitHub repository URL" });
     }
 
-    const [, owner, repo] = match;
+    const owner = match[1];
+    const repo = match[2].replace(/.git$/i, "");
+    if (!/^[w.-]+$/.test(owner) || !/^[w.-]+$/.test(repo)) {
+      return res.status(400).json({ message: "Invalid GitHub repository URL" });
+    }
     const branches = ["main", "master"];
     let content = null;
     let fetchedBranch = "";
@@ -227,9 +231,10 @@ const importFromGitHub = async (req, res) => {
     for (const b of branches) {
       const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${b}/README.md`;
       try {
-        const response = await fetch(rawUrl);
+        const response = await fetch(rawUrl, { signal: AbortSignal.timeout(8000) });
         if (response.ok) {
-          content = await response.text();
+          // Cap README size so a huge file can't bloat the DB or the AI prompts
+          content = (await response.text()).slice(0, 100000);
           fetchedBranch = b;
           break;
         }

@@ -11,6 +11,8 @@ const {
 // In-memory fallback if MongoDB is not connected
 let memoryResumeStore = [];
 
+const MAX_JOB_DESCRIPTION_CHARS = 10000;
+
 const generateResume = async (req, res) => {
   try {
     const { jobDescription, projectCount } = req.body;
@@ -19,6 +21,12 @@ const generateResume = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Job description is required to generate a resume." });
+    }
+
+    if (jobDescription.length > MAX_JOB_DESCRIPTION_CHARS) {
+      return res.status(400).json({
+        message: `Job description is too long (max ${MAX_JOB_DESCRIPTION_CHARS} characters).`,
+      });
     }
 
     const tailoredData = await buildTailoredResume({ jobDescription, projectCount });
@@ -244,7 +252,8 @@ const updateAndRecompileResume = async (req, res) => {
 
     if (resume) {
       resume.latexContent = latexContent;
-      if (pdfBase64) resume.pdfBase64 = pdfBase64;
+      // Never keep an old PDF next to new LaTeX: a stale PDF would silently be what gets emailed.
+      resume.pdfBase64 = pdfBase64 || "";
       if (title && title.trim()) resume.title = title.trim();
       if (selectedProjects.length > 0) resume.selectedProjects = selectedProjects;
       try {
@@ -255,7 +264,7 @@ const updateAndRecompileResume = async (req, res) => {
           memoryResumeStore[idx] = {
             ...memoryResumeStore[idx],
             latexContent,
-            pdfBase64: pdfBase64 || memoryResumeStore[idx].pdfBase64,
+            pdfBase64: pdfBase64 || "",
             title: resume.title,
             selectedProjects,
           };

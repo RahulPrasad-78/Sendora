@@ -21,8 +21,19 @@ const safeEqual = (a, b) => {
   return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 };
 
-const sign = (payload, secret) =>
-  crypto.createHmac("sha256", secret).update(payload).digest("base64url");
+// Signing key: OWNER_TOKEN_SECRET if set, otherwise a scrypt-derived key from the passcode so a
+// captured token can't be cheaply brute-forced offline to recover a weak passcode.
+let derivedKey = { passcode: null, key: null };
+const getSigningKey = (passcode) => {
+  if (process.env.OWNER_TOKEN_SECRET) return process.env.OWNER_TOKEN_SECRET;
+  if (derivedKey.passcode !== passcode) {
+    derivedKey = { passcode, key: crypto.scryptSync(passcode, "sendora-owner-token-v1", 32) };
+  }
+  return derivedKey.key;
+};
+
+const sign = (payload, passcode) =>
+  crypto.createHmac("sha256", getSigningKey(passcode)).update(payload).digest("base64url");
 
 /** Checks a submitted passcode against the configured one in constant time. */
 const verifyPasscode = (submitted) => {

@@ -123,13 +123,37 @@ export default function App() {
 
   useEffect(() => {
     // Check backend health first — show warning if server is not running
-    fetch(`${API}/health`)
-      .then((r) => { if (!r.ok) throw new Error("not ok"); setBackendDown(false); })
-      .catch(() => setBackendDown(true));
+    // Render's free tier can take ~30-60s to wake up, so retry before declaring the backend down.
+    let cancelled = false;
+    const checkHealth = async () => {
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt++) {
+        try {
+          const r = await fetch(`${API}/health`);
+          if (r.ok) {
+            setBackendDown(false);
+            if (attempt > 0) {
+              // Backend just woke up: reload data that failed while it was asleep
+              fetchOutreachLogs();
+              fetchSavedResumes();
+              checkOwnerAuth(ownerToken);
+            }
+            return;
+          }
+        } catch {
+          // retry below
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+      if (!cancelled) setBackendDown(true);
+    };
+    checkHealth();
 
     fetchOutreachLogs();
     fetchSavedResumes();
     checkOwnerAuth(ownerToken);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -145,6 +169,11 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setIsOwner(Boolean(data.isOwner));
+        if (!data.isOwner) {
+          // Expired or invalid token: drop it so the user can re-verify
+          localStorage.removeItem("sendora_owner_token");
+          setOwnerToken("");
+        }
       } else {
         setIsOwner(false);
       }
@@ -660,7 +689,7 @@ export default function App() {
                             {generatedNewResume && (
                               <span style={{ fontSize: "0.8rem", color: "var(--accent-green)", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}>
                                 <CheckCircle2 size={15} /> Ready: "{generatedNewResume.title}"
-                                {generatedNewResume._id && !generatedNewResume._id.startsWith("mem_") && (
+                                {generatedNewResume._id && !/^(mem_|preview_)/.test(generatedNewResume._id) && (
                                   <a
                                     href={`${API}/resumes/${generatedNewResume._id}/pdf`}
                                     target="_blank"

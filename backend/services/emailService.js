@@ -20,10 +20,18 @@ const getSmtpConfig = () => {
   };
 };
 
+// One pooled transporter per SMTP config, reused across sends (a new pool per send leaks connections).
+let cachedTransporter = null;
+let cachedTransporterKey = "";
+
 const createTransporter = () => {
   const { smtpHost, smtpPort, smtpUser, smtpPass } = getSmtpConfig();
+  const key = [smtpHost, smtpPort, smtpUser, smtpPass].join("|");
+  if (cachedTransporter && cachedTransporterKey === key) return cachedTransporter;
+  if (cachedTransporter) cachedTransporter.close();
 
-  return nodemailer.createTransport({
+  cachedTransporterKey = key;
+  cachedTransporter = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
     secure: smtpPort === 465,
@@ -36,6 +44,20 @@ const createTransporter = () => {
     greetingTimeout: 10000,   // 10s for SMTP greeting
     socketTimeout: 15000,     // 15s max for any socket operation
   });
+  return cachedTransporter;
+};
+
+// Strips a trailing sign-off ("Best regards," + name lines), but only when the sign-off is a
+// line of its own near the end, so body text like "Regards the stack..." is never truncated.
+const stripTrailingSignOff = (text) => {
+  const lines = text.split("\n");
+  const signOff = /^\s*(?:(?:best|warm|kind)\s+)?regards,?\s*$|^\s*sincerely,?\s*$/i;
+  for (let i = lines.length - 1; i >= 0 && i >= lines.length - 5; i--) {
+    if (signOff.test(lines[i])) {
+      return lines.slice(0, i).join("\n");
+    }
+  }
+  return text;
 };
 
 const escapeHtml = (value) =>
@@ -191,12 +213,7 @@ const sendEmail = async ({
 
   const rawBody = (body || "").trim();
   // Prevent duplicate sign-offs if the body already has a regards/sign-off ending
-  const sanitizedBody = rawBody
-    .replace(
-      /\n+(best\s+regards|warm\s+regards|regards|kind\s+regards|sincerely)[\s\S]*$/i,
-      ""
-    )
-    .trim();
+  const sanitizedBody = stripTrailingSignOff(rawBody).trim();
 
   const fullText = sanitizedBody + "\n" + textFooter;
 

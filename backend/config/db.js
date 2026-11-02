@@ -43,4 +43,6 @@ if (!process.env.MONGO_URI) {
   console.warn("Notice: MONGO_URI is not set. Sendora will run with in-memory fallbacks.");
 }
 
+connectDB.isConnected = () => mongoose.connection.readyState === 1;
+
 module.exports = connectDB;

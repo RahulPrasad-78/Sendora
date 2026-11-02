@@ -100,7 +100,7 @@ const generateEmail = async ({ jobRequirement, recruiterName }) => {
       model: GEMINI_MODEL,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 800,
+        maxOutputTokens: 2048,
       },
     });
 
@@ -285,14 +285,19 @@ const parseCategorizationResponse = (responseText, context) => {
       return fallbackCategorize(context);
     }
 
+    // Clamp to the values the CategorizedEmail model accepts, so a stray AI value can't fail the save.
+    const validPriorities = ["P0", "P1", "P2", "P3", "P4", "P5"];
+    const validSentiments = ["Positive", "Neutral", "Urgent", "Rejection", "Negative"];
+    const confidence = Number(parsed.confidenceScore);
+
     return {
       category: parsed.category,
-      priority: parsed.priority || "P3",
-      confidenceScore: typeof parsed.confidenceScore === "number" ? parsed.confidenceScore : 92,
+      priority: validPriorities.includes(parsed.priority) ? parsed.priority : "P3",
+      confidenceScore: Number.isFinite(confidence) ? Math.min(100, Math.max(0, confidence)) : 92,
       summary: parsed.summary || "Summary extracted by AI.",
       actionRequired: parsed.actionRequired || "None",
       deadline: parsed.deadline || "None",
-      sentiment: parsed.sentiment || "Neutral",
+      sentiment: validSentiments.includes(parsed.sentiment) ? parsed.sentiment : "Neutral",
       suggestedReply: parsed.suggestedReply || "",
     };
   } catch (error) {
@@ -318,7 +323,7 @@ const categorizeEmailContent = async ({ emailText, subject = "", senderName = ""
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
-        maxOutputTokens: 800,
+        maxOutputTokens: 2048,
       },
     });
 
@@ -395,7 +400,7 @@ const generateCustomReply = async ({ emailText, subject, senderName, replyIntent
       model: GEMINI_MODEL,
       generationConfig: {
         temperature: 0.6,
-        maxOutputTokens: 500,
+        maxOutputTokens: 1024,
       },
     });
 

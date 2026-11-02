@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const EmailLog = require("../models/EmailLog");
 const TailoredResume = require("../models/TailoredResume");
 const { buildTailoredResume } = require("../services/resumeService");
@@ -57,6 +58,9 @@ const generateAIResponse = async (req, res) => {
 
     if (!jobRequirement) {
       return res.status(400).json({ message: "jobRequirement is required" });
+    }
+    if (String(jobRequirement).length > 10000) {
+      return res.status(400).json({ message: "jobRequirement is too long (max 10000 characters)." });
     }
 
     const generatedEmail = await generateEmail({
@@ -126,6 +130,10 @@ const sendRecruiterEmail = async (req, res) => {
           attachedResumeTitle = existingResume.title || filename;
           attachedResumeId = existingResume._id;
           console.log(`[SEND] Existing resume loaded (${Math.round(pdfBuffer.length / 1024)}KB)`);
+        } else {
+          return res.status(400).json({
+            message: "The selected resume has no PDF to attach. Recompile it or choose another resume, or turn off the attachment.",
+          });
         }
       } else if (resumeMode === "new") {
         if (newResumeData && newResumeData.pdfBase64) {
@@ -137,7 +145,8 @@ const sendRecruiterEmail = async (req, res) => {
             contentType: "application/pdf",
           });
           attachedResumeTitle = newResumeData.title || filename;
-          attachedResumeId = newResumeData._id || null;
+          // Guest previews use ids like "preview_123" that are not Mongo ObjectIds
+          attachedResumeId = mongoose.isValidObjectId(newResumeData._id) ? newResumeData._id : null;
         } else if (jobRequirement) {
           // Generate new tailored resume on the fly and save to MongoDB
           const generated = await buildTailoredResume({ jobDescription: jobRequirement });
@@ -166,6 +175,10 @@ const sendRecruiterEmail = async (req, res) => {
               contentType: "application/pdf",
             });
             attachedResumeTitle = generated.title;
+          } else {
+            return res.status(422).json({
+              message: "Could not compile a resume PDF to attach, so the email was not sent. " + (generated.aiErrorMessage || ""),
+            });
           }
         }
       }
