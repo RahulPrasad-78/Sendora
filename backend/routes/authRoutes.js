@@ -1,11 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const { isOwnerAuthorized, getOwnerPasscode } = require("../middleware/authMiddleware");
+const {
+  isOwnerAuthorized,
+  getOwnerPasscode,
+  verifyPasscode,
+  issueOwnerToken,
+} = require("../middleware/authMiddleware");
+const { authLimiter } = require("../middleware/rateLimiters");
 
 // POST /api/auth/verify-owner
-// Checks submitted passcode against server environment
-router.post("/verify-owner", (req, res) => {
-  const { passcode } = req.body;
+// Checks submitted passcode against server environment and issues a signed, expiring token
+router.post("/verify-owner", authLimiter, (req, res) => {
+  const { passcode } = req.body || {};
   const configuredPasscode = getOwnerPasscode();
 
   if (!configuredPasscode) {
@@ -19,10 +25,10 @@ router.post("/verify-owner", (req, res) => {
     return res.status(400).json({ success: false, message: "Passcode is required." });
   }
 
-  if (passcode.trim() === configuredPasscode) {
+  if (typeof passcode === "string" && verifyPasscode(passcode)) {
     return res.status(200).json({
       success: true,
-      token: configuredPasscode,
+      token: issueOwnerToken(),
       message: "Owner access verified! All dispatch and edit actions unlocked.",
     });
   }

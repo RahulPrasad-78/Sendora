@@ -18,8 +18,6 @@ import {
   BookOpen,
   Check,
   X,
-  RefreshCw,
-  Eye,
   Upload,
 } from "lucide-react";
 
@@ -310,7 +308,7 @@ export default function KnowledgeBaseManager({
         );
         showBanner("success", updatedStatus ? `"${proj.title}" active in AI tailoring.` : `"${proj.title}" disabled from AI tailoring.`);
       }
-    } catch (err) {
+    } catch {
       showBanner("error", "Failed to update project status.");
     }
   };

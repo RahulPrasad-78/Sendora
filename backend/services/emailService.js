@@ -38,6 +38,25 @@ const createTransporter = () => {
   });
 };
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+// Only http(s) links are allowed in the signature (blocks javascript: and similar)
+const safeUrl = (url) => {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+};
+
 const formatDisplayLink = (url, fallbackLabel) => {
   if (!url) return "";
   try {
@@ -66,20 +85,10 @@ const buildRegardsFooter = ({
   attachedResumeName,
 }) => {
   const name = senderName || process.env.USER_NAME || "Rahul Prasad";
-  const linkedinUrl =
-    linkedin ||
-    process.env.USER_LINKEDIN ||
-    "https://www.linkedin.com/in/rahul-prasad-/";
-  const resumeUrl =
-    resumeLink ||
-    process.env.USER_RESUME ||
-    "https://drive.google.com/file/d/REDACTED/view?usp=drive_link";
-  const githubUrl =
-    github || process.env.USER_GITHUB || "https://github.com/RahulPrasad-78";
-  const leetcodeUrl =
-    leetcode ||
-    process.env.USER_LEETCODE ||
-    "https://leetcode.com/u/Rahul__78/";
+  const linkedinUrl = safeUrl(linkedin || process.env.USER_LINKEDIN);
+  const resumeUrl = safeUrl(resumeLink || process.env.USER_RESUME);
+  const githubUrl = safeUrl(github || process.env.USER_GITHUB);
+  const leetcodeUrl = safeUrl(leetcode || process.env.USER_LEETCODE);
 
   const textFooterLines = [
     "",
@@ -107,33 +116,33 @@ const buildRegardsFooter = ({
   const linkRows = [];
   if (linkedinUrl) {
     linkRows.push(
-      `<div>LinkedIn: <a href="${linkedinUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${linkedinDisplay}</a></div>`
+      `<div>LinkedIn: <a href="${escapeHtml(linkedinUrl)}" target="_blank" style="color: #0969da; text-decoration: underline;">${escapeHtml(linkedinDisplay)}</a></div>`
     );
   }
   if (githubUrl) {
     linkRows.push(
-      `<div>GitHub: <a href="${githubUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${githubDisplay}</a></div>`
+      `<div>GitHub: <a href="${escapeHtml(githubUrl)}" target="_blank" style="color: #0969da; text-decoration: underline;">${escapeHtml(githubDisplay)}</a></div>`
     );
   }
   if (leetcodeUrl) {
     linkRows.push(
-      `<div>LeetCode: <a href="${leetcodeUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${leetcodeDisplay}</a></div>`
+      `<div>LeetCode: <a href="${escapeHtml(leetcodeUrl)}" target="_blank" style="color: #0969da; text-decoration: underline;">${escapeHtml(leetcodeDisplay)}</a></div>`
     );
   }
   if (resumeUrl) {
     linkRows.push(
-      `<div>Resume: <a href="${resumeUrl}" target="_blank" style="color: #0969da; text-decoration: underline;">${resumeDisplay}</a></div>`
+      `<div>Resume: <a href="${escapeHtml(resumeUrl)}" target="_blank" style="color: #0969da; text-decoration: underline;">${escapeHtml(resumeDisplay)}</a></div>`
     );
   }
 
   const attachedNoteHtml = attachedResumeName
-    ? `<div style="margin-top: 10px; font-size: 13px; color: #57606a;">Attachment: ${attachedResumeName} (PDF)</div>`
+    ? `<div style="margin-top: 10px; font-size: 13px; color: #57606a;">Attachment: ${escapeHtml(attachedResumeName)} (PDF)</div>`
     : "";
 
   const htmlFooter = `
 <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #e1e4e8; font-size: 14px; line-height: 1.6; color: #24292f;">
   <p style="margin: 0 0 4px 0; font-size: 14px; color: #24292f;">Best regards,</p>
-  <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #24292f;">${name}</p>
+  <p style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600; color: #24292f;">${escapeHtml(name)}</p>
   ${
     linkRows.length > 0
       ? `<div style="font-size: 13px; line-height: 1.6; color: #57606a;">
@@ -196,7 +205,7 @@ const sendEmail = async ({
     .filter((paragraph) => paragraph.trim())
     .map(
       (paragraph) =>
-        `<p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #24292f;">${paragraph.replace(/\n/g, "<br/>")}</p>`,
+        `<p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #24292f;">${escapeHtml(paragraph).replace(/\n/g, "<br/>")}</p>`,
     )
     .join("\n");
 

@@ -1,4 +1,6 @@
 const EmailLog = require("../models/EmailLog");
+const TailoredResume = require("../models/TailoredResume");
+const { buildTailoredResume } = require("../services/resumeService");
 const { generateEmail } = require("../services/aiService");
 const { sendEmail } = require("../services/emailService");
 
@@ -13,7 +15,36 @@ const getEmailLogs = async (req, res) => {
 
 const createEmailLog = async (req, res) => {
   try {
-    const emailLog = await EmailLog.create(req.body);
+    const {
+      recruiterName,
+      recruiterEmail,
+      jobRequirement,
+      subject,
+      body,
+      linkedin,
+      github,
+      leetcode,
+      resumeLink,
+      attachedResumeTitle,
+      attachedResumeId,
+      status,
+      error: errorMessage,
+    } = req.body;
+    const emailLog = await EmailLog.create({
+      recruiterName,
+      recruiterEmail,
+      jobRequirement,
+      subject,
+      body,
+      linkedin,
+      github,
+      leetcode,
+      resumeLink,
+      attachedResumeTitle,
+      attachedResumeId,
+      status,
+      error: errorMessage,
+    });
     res.status(201).json(emailLog);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -49,9 +80,6 @@ const createEmailLogRecord = async (payload) => {
     return { emailLog: null, error };
   }
 };
-
-const TailoredResume = require("../models/TailoredResume");
-const { buildTailoredResume } = require("../services/resumeService");
 
 const sendRecruiterEmail = async (req, res) => {
   const {

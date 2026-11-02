@@ -1,4 +1,5 @@
 const TailoredResume = require("../models/TailoredResume");
+const { isOwnerAuthorized } = require("../middleware/authMiddleware");
 const {
   buildTailoredResume,
   getKnowledgeBaseStatus,
@@ -36,7 +37,6 @@ const generateResume = async (req, res) => {
       projectCount: tailoredData.projectCount || 2,
     };
 
-    const { isOwnerAuthorized } = require("../middleware/authMiddleware");
     const isOwner = isOwnerAuthorized(req);
 
     let savedRecord = null;

@@ -14,9 +14,20 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
-app.use(cors());
+// Behind Render/Vercel proxies, so req.ip (used by rate limiting) is the real client
+app.set("trust proxy", 1);
+
+// CORS_ORIGIN: comma-separated list of allowed frontend origins (e.g. your Vercel URL).
+// Unset = allow all origins (fine for local dev only).
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (allowedOrigins.length === 0) {
+  console.warn("Notice: CORS_ORIGIN is not set. Allowing requests from any origin.");
+}
+app.use(cors(allowedOrigins.length > 0 ? { origin: allowedOrigins } : undefined));
 app.use(express.json({ limit: "15mb" }));
-app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 connectDB();
 
@@ -26,7 +37,7 @@ app.use(async (_req, _res, next) => {
   next();
 });
 
-// Create an API router so endpoints respond whether accessed with or without /api prefix
+// All endpoints live under /api (Vite dev proxy, Vercel rewrite and the frontend all use it)
 const apiRouter = express.Router();
 
 // Health check — lets frontend detect if backend is running
@@ -40,9 +51,7 @@ apiRouter.use("/categorize", categoryRoutes);
 apiRouter.use("/resumes", resumeRoutes);
 apiRouter.use("/knowledge", knowledgeRoutes);
 
-// Mount router on BOTH "/api" AND "/" for seamless compatibility with local Vite proxy & Vercel rewrites
 app.use("/api", apiRouter);
-app.use("/", apiRouter);
 
 // Global error handler — ensures no request ever returns an empty body
 app.use((err, _req, res, _next) => {

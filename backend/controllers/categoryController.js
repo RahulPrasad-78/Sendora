@@ -73,11 +73,13 @@ const getCategorizedEmails = async (req, res) => {
     if (priority && priority !== "All") filter.priority = priority;
     if (status && status !== "All") filter.status = status;
     if (search) {
+      // Escape user input so it is matched literally (prevents regex injection / ReDoS)
+      const pattern = String(search).slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { subject: { $regex: search, $options: "i" } },
-        { senderName: { $regex: search, $options: "i" } },
-        { summary: { $regex: search, $options: "i" } },
-        { rawContent: { $regex: search, $options: "i" } },
+        { subject: { $regex: pattern, $options: "i" } },
+        { senderName: { $regex: pattern, $options: "i" } },
+        { summary: { $regex: pattern, $options: "i" } },
+        { rawContent: { $regex: pattern, $options: "i" } },
       ];
     }
 

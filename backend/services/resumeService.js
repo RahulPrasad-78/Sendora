@@ -23,14 +23,9 @@ const TEMP_DIR = (process.env.VERCEL || process.env.NODE_ENV === "production") ?
 
 // Windows MiKTeX PATH autodetect
 const possibleMiktexPaths = [
-  path.join(
-    process.env.LOCALAPPDATA || "C:\\Users\\ravis\\AppData\\Local",
-    "Programs",
-    "MiKTeX",
-    "miktex",
-    "bin",
-    "x64"
-  ),
+  ...(process.env.LOCALAPPDATA
+    ? [path.join(process.env.LOCALAPPDATA, "Programs", "MiKTeX", "miktex", "bin", "x64")]
+    : []),
   "C:\\Program Files\\MiKTeX\\miktex\\bin\\x64",
 ];
 for (const p of possibleMiktexPaths) {
@@ -40,6 +35,7 @@ for (const p of possibleMiktexPaths) {
 }
 
 const mongoose = require("mongoose");
+const { GEMINI_MODEL } = require("./aiService");
 const ProjectReadme = require("../models/ProjectReadme");
 const MasterResume = require("../models/MasterResume");
 const { DEFAULT_MASTER_LATEX, DEFAULT_CLS_CONTENT, DEFAULT_PROJECT_SEEDS } = require("./defaultTemplates");
@@ -241,7 +237,7 @@ Now tailor this resume specifically for the job description above with EXACTLY $
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.6-flash",
+      model: GEMINI_MODEL,
       systemInstruction: buildSystemInstruction(countNum),
       generationConfig: {
         temperature: 0.3,
@@ -298,7 +294,9 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
 
   // Detect documentclass name (e.g. \documentclass[]{kyvernitis-resume} -> kyvernitis-resume.cls)
   const docClassMatch = latexContent.match(/\\documentclass(?:\[[^\]]*\])?\{([^}]+)\}/);
-  const clsFileName = docClassMatch && docClassMatch[1] ? `${docClassMatch[1].trim()}.cls` : "kyvernitis-resume.cls";
+  const requestedClass = docClassMatch && docClassMatch[1] ? docClassMatch[1].trim() : "";
+  // Only allow plain class names: blocks path traversal like \documentclass{../../x}
+  const clsFileName = /^[A-Za-z0-9_-]+$/.test(requestedClass) ? `${requestedClass}.cls` : "kyvernitis-resume.cls";
   const clsDst = path.join(TEMP_DIR, clsFileName);
 
   // Write cls definition directly into compilation directory
@@ -321,7 +319,7 @@ function compileLatexToPdf(latexContent, clsContentOverride) {
     // --enable-installer is MiKTeX-only (Windows). On TeX Live (Linux/Docker), it causes errors.
     const isWindows = process.platform === "win32";
     const installerFlag = isWindows ? " --enable-installer" : "";
-    const cmd = `xelatex -interaction=nonstopmode${installerFlag} -output-directory="${TEMP_DIR}" "${texPath}"`;
+    const cmd = `xelatex -interaction=nonstopmode -no-shell-escape${installerFlag} -output-directory="${TEMP_DIR}" "${texPath}"`;
     console.log(`[XELATEX] Compiling: ${cmd}`);
     execSync(cmd, { cwd: TEMP_DIR, timeout: 60000, stdio: "pipe" });
     console.log("[XELATEX] Compilation finished successfully");
@@ -530,11 +528,9 @@ async function buildTailoredResume({ jobDescription, projectCount = 2 }) {
 }
 
 module.exports = {
-  readBaseResume,
   readBaseCls,
   readAllReadmes,
   getKnowledgeBaseStatus,
-  generateTailoredLatex,
   compileLatexToPdf,
   buildTailoredResume,
 };

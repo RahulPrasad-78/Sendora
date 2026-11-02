@@ -421,6 +421,7 @@ Write ONLY the email body response. Do NOT include placeholder tags like [Your N
 };
 
 module.exports = {
+  GEMINI_MODEL,
   generateEmail,
   categorizeEmailContent,
   generateCustomReply,

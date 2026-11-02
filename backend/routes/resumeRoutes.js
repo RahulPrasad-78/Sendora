@@ -9,10 +9,11 @@ const {
   updateAndRecompileResume,
 } = require("../controllers/resumeController");
 const { requireOwner } = require("../middleware/authMiddleware");
+const { aiLimiter } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 
-router.post("/generate", generateResume);
+router.post("/generate", aiLimiter, generateResume);
 router.post("/recompile", requireOwner, updateAndRecompileResume);
 router.put("/:id", requireOwner, updateAndRecompileResume);
 router.get("/status", getResumeStatus);

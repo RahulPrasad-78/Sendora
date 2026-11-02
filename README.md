@@ -6,7 +6,7 @@
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
-![Gemini](https://img.shields.io/badge/Google%20Gemini-2.0%20Flash-4285F4?logo=google&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google%20Gemini-Flash-4285F4?logo=google&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![License](https://img.shields.io/badge/License-ISC-blue)
 
@@ -23,7 +23,7 @@
 | 📤 **Cold Email Outreach Engine** | ✅ Live | AI-crafts hyper-personalized emails from job descriptions & sends via Gmail SMTP |
 | 📄 **AI Resume Builder** | ✅ Live | Generates tailored XeLaTeX PDFs, stores in MongoDB, attaches to outreach emails |
 | 🧠 **Dynamic Knowledge Base Studio** | ✅ Live | In-app MongoDB editor for Project READMEs (.md), GitHub repo auto-sync & Master LaTeX Resume |
-| 🗂️ **Email Categorizer & Triage** | ✅ Live | Classifies inbound emails, extracts deadlines & actions, drafts smart replies |
+| 🗂️ **Email Categorizer & Triage** | 🚧 API ready, UI coming soon (owner-only) | Classifies inbound emails, extracts deadlines & actions, drafts smart replies |
 
 ---
 
@@ -64,7 +64,7 @@
    GET /api/emails               GET /api/resumes/:id/pdf
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   BACKEND SERVICES                                      │
-│  • aiService.js       : Google Gemini 2.0 Flash — email generation & categorization    │
+│  • aiService.js       : Google Gemini Flash — email generation & categorization    │
 │  • resumeService.js   : Knowledge-base parsing & XeLaTeX PDF compilation               │
 │  • emailService.js    : Nodemailer SMTP with PDF attachments & HTML signatures         │
 │  • MongoDB Atlas      : EmailLog, TailoredResume, CategorizedEmail collections         │
@@ -81,7 +81,7 @@ Paste a job description, and Sendora's AI writes a targeted, personalized cold e
 
 1. **Fill recruiter details** — name and email address.
 2. **Paste the job description** — any format works.
-3. **Generate** — Gemini 2.0 Flash analyzes your profile (from `.env`) and the JD to craft a compelling subject + body.
+3. **Generate** — Google Gemini Flash analyzes your profile (from `.env`) and the JD to craft a compelling subject + body.
 4. **Edit the preview** — tweak anything before sending.
 5. **Attach a resume** — generate a new AI-tailored resume or pick one from your MongoDB library.
 6. **Send** — dispatched via Nodemailer (Gmail SMTP, port 465 SSL) with an auto-appended signature:
@@ -182,19 +182,19 @@ Sendora/
 │   │   ├── CategorizedEmail.js      # Categorized inbound emails & triage data
 │   │   ├── ProjectReadme.js         # Stored project READMEs (markdown + tech tags)
 │   │   └── MasterResume.js          # Master ATS LaTeX resume template
+│   ├── middleware/
+│   │   ├── authMiddleware.js        # Signed owner tokens + requireOwner guard
+│   │   └── rateLimiters.js          # Rate limits for AI and passcode endpoints
 │   ├── routes/
+│   │   ├── authRoutes.js            # /api/auth/*
 │   │   ├── emailRoutes.js           # /api/emails/*
 │   │   ├── resumeRoutes.js          # /api/resumes/*
 │   │   ├── categoryRoutes.js        # /api/categorize/*
 │   │   └── knowledgeRoutes.js       # /api/knowledge/*
 │   ├── services/
-│   │   ├── aiService.js             # Gemini 2.0 Flash — email & categorization AI
+│   │   ├── aiService.js             # Google Gemini Flash — email & categorization AI
 │   │   ├── resumeService.js         # Knowledge-base parsing & XeLaTeX compilation
 │   │   └── emailService.js          # Nodemailer SMTP with PDF attachments & signatures
-│   ├── knowledge-base/
-│   │   ├── resume.tex               # Seed base LaTeX resume
-│   │   ├── kyvernitis-resume.cls    # Custom resume document class
-│   │   └── readmes/                 # Seed project READMEs
 │   ├── server.js                    # Express app entry point (port 7000)
 │   ├── .env.example                 # Environment setup template
 │   └── .env                         # Environment secrets (not committed)
@@ -207,10 +207,10 @@ Sendora/
 │   │   ├── App.jsx                  # Main app — Outreach, Resume Builder, Knowledge Base, Categorizer
 │   │   ├── index.css                # Glassmorphism dark-mode design system
 │   │   └── main.jsx                 # React 19 entry point
+│   ├── public/sendora-overview.html # Interactive architecture documentation
 │   ├── vite.config.js               # Dev server with /api proxy to :7000
 │   └── package.json
 │
-├── sendora-overview.html            # Interactive architecture documentation
 └── package.json                     # Root orchestrator scripts
 ```
 
@@ -308,7 +308,7 @@ Run this single command from the root directory:
 npm run install:all
 ```
 
-This installs root, backend, and frontend packages in one go.
+This installs the root, backend, and frontend packages in one go (npm workspaces).
 
 ### 5. Run both servers
 
@@ -335,9 +335,9 @@ Copy `.env.example` to `backend/.env` and fill in the values below.
 | `MONGO_URI` | No* | MongoDB Atlas connection string — app runs gracefully without it |
 | `GEMINI_API_KEY` | No* | Google AI API key — falls back to a template email if absent |
 | `USER_NAME` | Yes | Your full name — used in AI prompts & email signatures |
-| `USER_ROLE` | Yes | Your current role/title |
-| `USER_SKILLS` | Yes | Comma-separated list of your core skills |
-| `USER_RESUME_SUMMARY` | Yes | Short bio used by AI for personalization |
+| `OWNER_PASSCODE` | Yes | Unlocks Owner Mode (sending, editing, deleting). Use a long random value; owner tokens expire after 12h |
+| `CORS_ORIGIN` | Prod | Comma-separated frontend origins allowed to call the API (e.g. your Vercel URL) |
+| `GEMINI_MODEL` | No | Override the Gemini model used for all AI calls |
 | `USER_LINKEDIN` | Yes | LinkedIn profile URL |
 | `USER_GITHUB` | Yes | GitHub profile URL |
 | `USER_RESUME` | Yes | Google Drive (or other) link to your resume PDF |
@@ -356,7 +356,7 @@ Copy `.env.example` to `backend/.env` and fill in the values below.
 |:---|:---|
 | **Frontend** | React 19, Vite 8, Lucide React, Glassmorphism CSS |
 | **Backend** | Node.js, Express 5, Nodemailer |
-| **AI** | Google Gemini 2.0 Flash (`@google/generative-ai`) |
+| **AI** | Google Gemini Flash (`@google/generative-ai`) |
 | **Database** | MongoDB Atlas + Mongoose 9 |
 | **PDF Generation** | XeLaTeX (via `resumeService.js`) |
 | **Dev tooling** | Nodemon, Concurrently, oxlint |
