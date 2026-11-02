@@ -8,7 +8,7 @@ const DEFAULT_MASTER_LATEX = `\\documentclass[]{kyvernitis-resume}
 {\\email{you@example.com}}
 {\\github{/RahulPrasad-78}}
 {\\linkedin{/rahul-prasad-}}
-{\\phone{+91 0000000000}}
+{\\phone{+00 0000000000}}
 {\\leetcode{LeetCode}}
 {\\geeksforgeeks{GeeksForGeeks}}
  \\vspace{-0.5em} % Adjust the value as needed
