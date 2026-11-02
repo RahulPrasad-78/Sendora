@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sendora – Complete Project Guide for Beginners</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #171e27; --panel2: #1e2733; --line: #2c3a4b;
+    --text: #e6edf3; --muted: #9aa8b8; --accent: #4cc2ff; --green: #3ddc97;
+    --amber: #ffc857; --red: #ff6b6b; --purple: #b794f6;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.65;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .layout { display: flex; max-width: 1280px; margin: 0 auto; }
+  nav { position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto;
+    width: 270px; flex-shrink: 0; padding: 24px 16px; border-right: 1px solid var(--line); }
+  nav h2 { font-size: 1.1rem; margin: 0 0 12px; color: var(--accent); }
+  nav a { display: block; color: var(--muted); text-decoration: none; padding: 5px 10px;
+    border-radius: 6px; font-size: .88rem; }
+  nav a:hover { background: var(--panel2); color: var(--text); }
+  main { padding: 32px 40px 80px; min-width: 0; flex: 1; }
+  h1 { font-size: 2.2rem; margin: 0 0 6px; }
+  h2.sec { font-size: 1.6rem; margin: 56px 0 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.15rem; margin: 28px 0 8px; color: var(--accent); }
+  p, li { color: #d3dce6; }
+  .lead { font-size: 1.1rem; color: var(--muted); }
+  code { background: var(--panel2); padding: 2px 6px; border-radius: 4px; font-size: .88em;
+    font-family: Consolas, Menlo, monospace; color: var(--amber); }
+  pre { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px; border-radius: 8px;
+    overflow-x: auto; font-size: .85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: #cfe3f5; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+  .tip { border-left: 4px solid var(--green); } .warn { border-left: 4px solid var(--amber); }
+  .tip b.t { color: var(--green); } .warn b.t { color: var(--amber); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .9rem; background: var(--panel); }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--panel2); color: var(--accent); }
+  .badge { display: inline-block; font-size: .72rem; padding: 1px 8px; border-radius: 99px; font-weight: 600; }
+  .pub { background: #12351f; color: var(--green); } .own { background: #3b1f24; color: var(--red); }
+  .tag { background: var(--panel2); color: var(--muted); }
+
+  /* flowcharts */
+  .flow { display: flex; flex-direction: column; align-items: center; margin: 18px 0; gap: 0; }
+  .box { background: var(--panel2); border: 1.5px solid var(--accent); border-radius: 10px;
+    padding: 10px 16px; text-align: center; max-width: 560px; width: 100%; font-size: .92rem; }
+  .box small { display: block; color: var(--muted); font-size: .78rem; margin-top: 2px; }
+  .box.fe { border-color: var(--accent); } .box.be { border-color: var(--green); }
+  .box.ai { border-color: var(--purple); } .box.db { border-color: var(--amber); }
+  .box.bad { border-color: var(--red); } .box.dec { border-color: var(--amber); border-style: dashed; border-radius: 24px; }
+  .arrow { color: var(--muted); font-size: 1.3rem; line-height: 1.1; padding: 2px 0; }
+  .arrow span { font-size: .72rem; display: block; text-align: center; color: var(--muted); }
+  .branch { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; width: 100%; }
+  .branch > .flow { flex: 1 1 240px; margin: 0; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 2px solid; }
+  svg text { font-family: inherit; }
+  @media (max-width: 860px) { nav { display: none; } main { padding: 20px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <h2>Sendora Guide</h2>
+  <a href="#what">1. What is Sendora?</a>
+  <a href="#concepts">2. Concepts you need first</a>
+  <a href="#bigpicture">3. The big picture</a>
+  <a href="#structure">4. Folder structure</a>
+  <a href="#stack">5. Tech used &amp; why</a>
+  <a href="#backend">6. How the backend works</a>
+  <a href="#frontend">7. How the frontend works</a>
+  <a href="#flows">8. Flow charts</a>
+  <a href="#owner">9. Owner vs Viewer mode</a>
+  <a href="#api">10. API reference</a>
+  <a href="#data">11. Database models</a>
+  <a href="#security">12. Security measures</a>
+  <a href="#env">13. Environment variables</a>
+  <a href="#run">14. Run it yourself</a>
+  <a href="#deploy">15. Deployment</a>
+  <a href="#gotchas">16. Known limits &amp; gotchas</a>
+  <a href="#glossary">17. Glossary</a>
+</nav>
+
+<main>
+<h1>Sendora – Complete Project Guide</h1>
+<p class="lead">Everything about this project in one page: what it does, what each file is for, how the backend and frontend talk to each other, and flow charts of every important process. Written so a complete beginner can follow it.</p>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="what">1. What is Sendora?</h2>
+<p>Sendora is a personal <b>job-search assistant</b> built as a web app. It helps one person (the "owner") do three boring but important things faster:</p>
+<div class="grid">
+  <div class="card"><b>✉️ Cold email outreach</b><br/>You paste a job description and a recruiter's name. AI writes a polite email, you review it, and Sendora sends it from your own email account with a resume attached.</div>
+  <div class="card"><b>📄 AI resume builder</b><br/>You paste a job description. AI picks your most relevant projects and rewrites your resume (in LaTeX) for that job. Sendora compiles it to a PDF you can download or attach.</div>
+  <div class="card"><b>🧠 Knowledge base</b><br/>The place where you store the facts the AI uses: your project descriptions and your master resume. Better facts in → better resumes out.</div>
+  <div class="card"><b>📥 Email categorizer</b><br/>Reads an incoming email and labels it (interview invite, rejection, spam…), with a priority and a suggested reply. The backend is ready; the screen in the UI says "Coming Soon".</div>
+</div>
+<div class="card tip"><b class="t">Two kinds of visitors.</b> Because this is a portfolio project, <i>anyone</i> can open the site and try the AI features (Viewer / guest mode), but only the <b>owner</b> (who knows a secret passcode) can send real emails or change saved data. See <a href="#owner" style="color:var(--accent)">section 9</a>.</div>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="concepts">2. Concepts you need first</h2>
+<p>If these words are new to you, read this section. Everything else builds on it.</p>
+<table>
+  <tr><th>Term</th><th>Plain-English meaning</th></tr>
+  <tr><td><b>Frontend</b></td><td>The part you see and click in the browser: buttons, forms, tables. Here it is written in <b>React</b>.</td></tr>
+  <tr><td><b>Backend</b></td><td>A program running on a server that does the real work: talks to the AI, the database, sends email. Here it is written in <b>Node.js + Express</b>.</td></tr>
+  <tr><td><b>API</b></td><td>The "menu" of requests the backend accepts, e.g. "give me the list of projects". The frontend calls the API with <code>fetch()</code>.</td></tr>
+  <tr><td><b>Endpoint / route</b></td><td>One item on that menu: a URL + method such as <code>POST /api/emails/send</code>.</td></tr>
+  <tr><td><b>HTTP methods</b></td><td><code>GET</code> = read, <code>POST</code> = create / do something, <code>PUT</code> = update, <code>DELETE</code> = remove.</td></tr>
+  <tr><td><b>JSON</b></td><td>The text format frontend and backend use to exchange data: <code>{"subject":"Hi"}</code>.</td></tr>
+  <tr><td><b>Database (MongoDB)</b></td><td>Where data survives restarts. MongoDB stores "documents" (like JSON objects) grouped in "collections".</td></tr>
+  <tr><td><b>Middleware</b></td><td>A checkpoint a request passes through before reaching the real handler (e.g. "is this person the owner?").</td></tr>
+  <tr><td><b>Environment variable</b></td><td>A secret/setting kept outside the code (API keys, passwords) in a <code>.env</code> file so it never gets published.</td></tr>
+  <tr><td><b>LaTeX</b></td><td>A typesetting language used to make beautiful documents. The resume is written as LaTeX text and compiled into a PDF by a tool called <b>XeLaTeX</b>.</td></tr>
+  <tr><td><b>LLM / Gemini</b></td><td>The AI model (Google Gemini) that writes emails and resume text.</td></tr>
+  <tr><td><b>SMTP / Nodemailer</b></td><td>SMTP is the protocol email servers speak. Nodemailer is the Node library that sends mail through it.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="bigpicture">3. The big picture</h2>
+<p>Three programs/services cooperate. The browser never talks to the AI, database or mail server directly &mdash; it only talks to your backend, which holds the secrets.</p>
+
+<svg viewBox="0 0 900 360" width="100%" role="img" aria-label="Architecture diagram" style="background:var(--panel);border:1px solid var(--line);border-radius:10px">
+  <defs><marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#9aa8b8"/></marker></defs>
+  <g font-size="14" fill="#e6edf3" text-anchor="middle">
+    <rect x="20" y="130" width="170" height="90" rx="12" fill="#1e2733" stroke="#4cc2ff" stroke-width="2"/>
+    <text x="105" y="165" font-weight="700">Browser</text><text x="105" y="187" font-size="12" fill="#9aa8b8">React app (Vite)</text><text x="105" y="205" font-size="12" fill="#9aa8b8">hosted on Vercel</text>
+
+    <rect x="290" y="110" width="200" height="130" rx="12" fill="#1e2733" stroke="#3ddc97" stroke-width="2"/>
+    <text x="390" y="145" font-weight="700">Backend API</text><text x="390" y="167" font-size="12" fill="#9aa8b8">Node + Express</text>
+    <text x="390" y="185" font-size="12" fill="#9aa8b8">hosted on Render (Docker)</text><text x="390" y="207" font-size="12" fill="#9aa8b8">routes → controllers → services</text>
+
+    <rect x="620" y="20" width="160" height="70" rx="12" fill="#1e2733" stroke="#b794f6" stroke-width="2"/>
+    <text x="700" y="52" font-weight="700">Google Gemini</text><text x="700" y="72" font-size="12" fill="#9aa8b8">AI text generation</text>
+
+    <rect x="620" y="145" width="160" height="70" rx="12" fill="#1e2733" stroke="#ffc857" stroke-width="2"/>
+    <text x="700" y="177" font-weight="700">MongoDB</text><text x="700" y="197" font-size="12" fill="#9aa8b8">saved data</text>
+
+    <rect x="620" y="270" width="160" height="70" rx="12" fill="#1e2733" stroke="#ff9f6b" stroke-width="2"/>
+    <text x="700" y="302" font-weight="700">SMTP mail server</text><text x="700" y="322" font-size="12" fill="#9aa8b8">e.g. Gmail</text>
+
+    <rect x="300" y="285" width="180" height="55" rx="12" fill="#1e2733" stroke="#6bd3ff" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="390" y="309" font-weight="700">XeLaTeX</text><text x="390" y="327" font-size="12" fill="#9aa8b8">LaTeX → PDF (inside server)</text>
+  </g>
+  <g stroke="#9aa8b8" stroke-width="2" fill="none" marker-end="url(#ar)">
+    <path d="M190,175 L288,175"/><path d="M490,150 L618,60"/><path d="M490,175 L618,180"/><path d="M490,205 L618,300"/><path d="M390,240 L390,283"/>
+  </g>
+  <g font-size="11" fill="#9aa8b8" text-anchor="middle">
+    <text x="240" y="165">HTTPS + JSON</text><text x="560" y="95">prompts</text><text x="560" y="168">read / write</text><text x="565" y="255">send mail</text>
+  </g>
+</svg>
+
+<h3>One sentence per layer</h3>
+<ol>
+  <li><b>React frontend</b> shows the screens and sends requests.</li>
+  <li><b>Express backend</b> checks who you are, validates input, then calls the AI / database / mail server / LaTeX compiler.</li>
+  <li><b>External services</b> (Gemini, MongoDB, SMTP) do specialised jobs and send results back.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="structure">4. Folder structure (what each file does)</h2>
+<pre><code>Sendora/
+├── package.json              Root "workspace": one command installs/runs frontend + backend
+├── README.md                 Short project readme
+├── Sendora-Project-Guide.html   (this file)
+│
+├── backend/                  ───── THE SERVER ─────
+│   ├── server.js             Starts Express, sets CORS/JSON, mounts all routes, error handler
+│   ├── Dockerfile            Recipe to run the server in a container with LaTeX installed
+│   ├── .env.example          List of settings you must provide (copy to .env)
+│   ├── config/db.js          Connects to MongoDB (with a safe "in-memory" fallback)
+│   ├── middleware/
+│   │   ├── authMiddleware.js Owner passcode → signed token; requireOwner guard
+│   │   └── rateLimiters.js   Limits how often someone can hit AI / passcode endpoints
+│   ├── routes/               URL → handler mapping (the "menu")
+│   │   ├── authRoutes.js         /api/auth/*
+│   │   ├── emailRoutes.js        /api/emails/*
+│   │   ├── resumeRoutes.js       /api/resumes/*
+│   │   ├── knowledgeRoutes.js    /api/knowledge/*
+│   │   └── categoryRoutes.js     /api/categorize/*   (owner only)
+│   ├── controllers/          The logic for each request (read input, call services, reply)
+│   │   ├── emailController.js
+│   │   ├── resumeController.js
+│   │   ├── knowledgeController.js
+│   │   └── categoryController.js
+│   ├── services/             Reusable workers that talk to the outside world
+│   │   ├── aiService.js          All Gemini calls (emails, categorizing, replies)
+│   │   ├── resumeService.js      Tailors LaTeX with AI and compiles it to PDF
+│   │   ├── emailService.js       Builds the HTML/text email and sends via Nodemailer
+│   │   └── defaultTemplates.js   Built-in sample resume, class file and project seeds
+│   └── models/               Shape of the data stored in MongoDB
+│       ├── EmailLog.js           Every outreach email you sent (or failed to send)
+│       ├── TailoredResume.js     Each generated resume (LaTeX + PDF)
+│       ├── MasterResume.js       Your base resume the AI starts from
+│       ├── ProjectReadme.js      Your project descriptions (the knowledge base)
+│       └── CategorizedEmail.js   Results of the email categorizer
+│
+└── frontend/                 ───── THE WEBSITE ─────
+    ├── index.html            The single HTML page React mounts into
+    ├── vite.config.js        Dev server on :3000 + proxy /api → backend :7000
+    ├── vercel.json           Vercel hosting rules
+    ├── .env.example          VITE_API_URL (where the backend lives)
+    └── src/
+        ├── main.jsx          Starts React
+        ├── api.js            One constant: the backend base URL
+        ├── App.jsx           Main screen: tabs, owner login, Outreach tab, logs table
+        ├── index.css         All styling
+        └── components/
+            ├── ResumeBuilder.jsx        "Resume Builder" tab
+            └── KnowledgeBaseManager.jsx "Knowledge Base" tab</code></pre>
+
+<h3>The routes → controllers → services pattern</h3>
+<p>Every request follows the same three steps, which keeps the code tidy:</p>
+<div class="flow">
+  <div class="box be"><b>Route</b><small>"Which function handles POST /api/emails/send?" (and which guards run first)</small></div><div class="arrow">↓</div>
+  <div class="box be"><b>Controller</b><small>Reads the request, checks the input, decides what to do, builds the response</small></div><div class="arrow">↓</div>
+  <div class="box be"><b>Service</b><small>Does the heavy lifting: calls Gemini, compiles LaTeX, sends SMTP mail</small></div><div class="arrow">↓</div>
+  <div class="box db"><b>Model</b><small>Reads/writes MongoDB</small></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="stack">5. Tech used and why</h2>
+<table>
+  <tr><th>Tech</th><th>Where</th><th>Why it is here</th></tr>
+  <tr><td>React 19</td><td>frontend</td><td>Builds the interface from small reusable components; re-renders when data changes.</td></tr>
+  <tr><td>Vite</td><td>frontend</td><td>Super fast dev server and bundler. Also proxies <code>/api</code> to the backend during development.</td></tr>
+  <tr><td>lucide-react</td><td>frontend</td><td>The icon set.</td></tr>
+  <tr><td>Node.js + Express 5</td><td>backend</td><td>Runs JavaScript on the server and handles HTTP requests.</td></tr>
+  <tr><td>Mongoose + MongoDB</td><td>backend</td><td>Stores logs, resumes, projects. Mongoose defines the data "shape" (schemas).</td></tr>
+  <tr><td>@google/generative-ai</td><td>backend</td><td>Official client for Google Gemini.</td></tr>
+  <tr><td>Nodemailer</td><td>backend</td><td>Sends the actual emails through your SMTP account.</td></tr>
+  <tr><td>express-rate-limit</td><td>backend</td><td>Stops abuse: 20 AI requests / 15 min and 10 passcode attempts / 15 min per visitor.</td></tr>
+  <tr><td>cors, dotenv</td><td>backend</td><td>CORS decides which websites may call the API; dotenv loads the <code>.env</code> file.</td></tr>
+  <tr><td>XeLaTeX (TeX Live)</td><td>server machine</td><td>Compiles LaTeX to PDF. Installed in the Docker image.</td></tr>
+  <tr><td>Docker</td><td>backend deploy</td><td>Packages Node + LaTeX together so it runs the same everywhere (used on Render).</td></tr>
+  <tr><td>Vercel / Render</td><td>hosting</td><td>Vercel serves the React site; Render runs the backend container.</td></tr>
+  <tr><td>npm workspaces + concurrently</td><td>root</td><td>One <code>npm install</code> and one <code>npm run dev</code> start both apps.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="backend">6. How the backend works</h2>
+
+<h3>6.1 Startup – <code>server.js</code></h3>
+<ol>
+  <li>Loads the <code>.env</code> settings.</li>
+  <li>Creates the Express app and turns on <b>CORS</b> (only the websites in <code>CORS_ORIGIN</code> may call it) and the JSON body parser (max 2&nbsp;MB).</li>
+  <li>Calls <code>connectDB()</code> to connect to MongoDB. If there is no <code>MONGO_URI</code> or the DB is down, the app <b>still starts</b> and keeps some data in server memory instead.</li>
+  <li>Mounts every router under <code>/api</code>: <code>/auth</code>, <code>/emails</code>, <code>/categorize</code>, <code>/resumes</code>, <code>/knowledge</code>, plus <code>/api/health</code>.</li>
+  <li>Adds a final error handler so a crash returns clean JSON instead of an empty page.</li>
+</ol>
+
+<h3>6.2 Authentication – <code>authMiddleware.js</code> and <code>authRoutes.js</code></h3>
+<p>There are no user accounts. There is one secret <b>passcode</b> (<code>OWNER_PASSCODE</code>).</p>
+<ul>
+  <li><code>POST /api/auth/verify-owner</code> – you send the passcode. If it matches (compared in constant time so timing can't leak it), the server returns a <b>signed token</b> that contains an expiry time (12 hours). The passcode itself is never sent back.</li>
+  <li>The frontend stores the token and attaches it to protected requests as the header <code>x-owner-key</code>.</li>
+  <li><code>requireOwner</code> is a guard placed on a route: it checks the token's signature and expiry. No valid token → <code>403</code>.</li>
+  <li><code>GET /api/auth/status</code> tells the frontend whether its saved token is still valid.</li>
+</ul>
+
+<h3>6.3 Database connection – <code>config/db.js</code></h3>
+<p>Connects once, retries at most every 15 seconds if it fails, and tells Mongoose <b>not</b> to wait around when disconnected. Controllers check <code>connectDB.isConnected()</code>; when false they use an in-memory array so the demo keeps working (data lost on restart).</p>
+
+<h3>6.4 AI – <code>services/aiService.js</code></h3>
+<ul>
+  <li>Reads <code>GEMINI_API_KEY</code> and the model name from <code>GEMINI_MODEL</code>.</li>
+  <li><b>generateEmail</b> – turns a job description + recruiter name into <code>{subject, body}</code>. It is told <i>not</i> to add a sign-off because the server adds the signature itself.</li>
+  <li><b>categorizeEmailContent</b> – asks Gemini for JSON: category, priority (P0–P5), sentiment, summary, deadline, suggested reply. The answer is validated and forced into allowed values.</li>
+  <li><b>generateCustomReply</b> – writes a reply with your extra instructions.</li>
+  <li>If there is no API key, or Gemini errors / is rate-limited, every function returns a sensible <b>fallback template</b> so the UI never breaks.</li>
+</ul>
+
+<h3>6.5 Resume engine – <code>services/resumeService.js</code></h3>
+<ol>
+  <li><b>Gather inputs:</b> master resume LaTeX, the <code>.cls</code> style file, and all project READMEs (from MongoDB, disk, or built-in defaults – in that order).</li>
+  <li><b>Ask Gemini</b> to pick the N best-matching projects (1–5), reorder skills and tune bullets, keeping the exact LaTeX layout. Output must be raw LaTeX.</li>
+  <li><b>Check the answer:</b> must contain <code>\documentclass</code> and <code>\end{document}</code>; otherwise the base resume is used.</li>
+  <li><b>Compile safely:</b> the LaTeX is first scanned and rejected if it contains file-reading commands like <code>\input</code> or <code>\write</code>. Then XeLaTeX runs in its own throw-away folder with a 60-second timeout, shell access off, file access restricted, max 2 compiles at once. The folder is deleted afterwards.</li>
+  <li><b>Return</b> LaTeX + PDF (as base64 text) + metadata (target role, company, key skills, chosen projects, a file name).</li>
+</ol>
+
+<h3>6.6 Email sending – <code>services/emailService.js</code></h3>
+<ul>
+  <li>Keeps <b>one</b> reusable SMTP connection (with timeouts so it fails fast instead of hanging).</li>
+  <li>Removes any "Best regards" the AI added at the end, then appends a clean signature (name, LinkedIn, GitHub, LeetCode, resume link). All user text is HTML-escaped and only <code>http(s)</code> links are allowed in the signature.</li>
+  <li>Sends both a plain-text and an HTML version, with the PDF attached when provided.</li>
+</ul>
+
+<h3>6.7 Controllers in one table</h3>
+<table>
+  <tr><th>Controller</th><th>What it does</th></tr>
+  <tr><td><code>emailController</code></td><td>Generate an AI email draft; send an email (optionally attaching an existing resume, a just-generated one, or building one on the fly); save every attempt (success or fail) in <code>EmailLog</code>; list logs.</td></tr>
+  <tr><td><code>resumeController</code></td><td>Generate a tailored resume (owners: saved to DB; guests: returned as a preview only); recompile edited LaTeX; list, fetch, download PDF, delete; report tool status (is XeLaTeX installed? is the API key set?).</td></tr>
+  <tr><td><code>knowledgeController</code></td><td>CRUD for project descriptions; import a README straight from a GitHub URL (tries <code>main</code> then <code>master</code>, auto-detects tech keywords); get/save/reset the master resume. Seeds default content on first use.</td></tr>
+  <tr><td><code>categoryController</code></td><td>Categorize an incoming email with AI and save it; list/filter; change status (Unread/Read/Replied/Archived); delete; send a smart reply; regenerate a reply.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="frontend">7. How the frontend works</h2>
+
+<h3>7.1 Startup</h3>
+<p><code>index.html</code> contains an empty <code>&lt;div id="root"&gt;</code>. <code>main.jsx</code> starts React and renders <code>App.jsx</code> into it. The whole site is a <b>single page</b>: clicking tabs changes what is shown without reloading.</p>
+
+<h3>7.2 Talking to the backend – <code>api.js</code></h3>
+<pre><code>export const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/+$/, "");
+// production: VITE_API_URL = https://your-backend.onrender.com/api
+// local dev : falls back to "/api", and Vite's proxy forwards it to localhost:7000</code></pre>
+<p>Every <code>fetch(`${API}/...`)</code> in the app starts from this one constant, so you change the server address in exactly one place.</p>
+
+<h3>7.3 <code>App.jsx</code> – the main component</h3>
+<ul>
+  <li><b>State</b> (React's memory): which tab is active, the form fields, generated email, resume list, outreach logs, whether you are the owner, status banners.</li>
+  <li><b>On page load</b> it checks <code>/api/health</code> (retrying for ~30 s because free hosting "sleeps"), then loads logs and saved resumes (owner only) and verifies any saved owner token.</li>
+  <li><b>Tabs:</b> Outreach, Resume Builder, Knowledge Base, Email Categorizer (Coming Soon).</li>
+  <li><b>Outreach tab:</b> fill job requirement + recruiter details → <i>Generate with AI</i> → edit the draft → choose a resume (existing / build new / none) → <i>Send</i>. Below it, a table of past emails.</li>
+  <li><b>Owner modal:</b> asks for the passcode, stores the returned token in <code>localStorage</code>, and unlocks owner-only buttons. Locked buttons show a friendly "Viewer Mode" explanation instead of failing.</li>
+</ul>
+
+<h3>7.4 <code>ResumeBuilder.jsx</code></h3>
+<ul>
+  <li>Paste a job description, choose how many projects (1–5), click generate.</li>
+  <li>Shows the LaTeX code (editable) and a live PDF preview made from the base64 PDF.</li>
+  <li>Edit the LaTeX and press recompile to get a new PDF. Copy the LaTeX, download the PDF, delete saved resumes, or push a resume into the Send-Mail tab with "Use".</li>
+</ul>
+
+<h3>7.5 <code>KnowledgeBaseManager.jsx</code></h3>
+<ul>
+  <li>List, add, edit, delete and "feature" your projects (title, tagline, tech stack, README content).</li>
+  <li>Import a project from a GitHub URL with one click.</li>
+  <li>View, edit, save and reset the master resume LaTeX.</li>
+</ul>
+
+<div class="card tip"><b class="t">Beginner tip:</b> React "state" is simply variables React watches. When <code>setSomething(newValue)</code> is called, React redraws the parts of the page that use it &mdash; that's how a banner appears after you click Send.</div>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="flows">8. Flow charts</h2>
+<div class="legend">
+  <span><i style="border-color:var(--accent)"></i>Frontend</span>
+  <span><i style="border-color:var(--green)"></i>Backend</span>
+  <span><i style="border-color:var(--purple)"></i>AI</span>
+  <span><i style="border-color:var(--amber)"></i>Database / decision</span>
+  <span><i style="border-color:var(--red)"></i>Error / blocked</span>
+</div>
+
+<h3>8.1 Page load</h3>
+<div class="flow">
+  <div class="box fe">User opens the website<small>Vercel serves index.html + the React bundle</small></div><div class="arrow">↓</div>
+  <div class="box fe">App.jsx starts<small>runs the load effect</small></div><div class="arrow">↓</div>
+  <div class="box be">GET /api/health<small>retry up to 6× every 5 s (free server may be waking up)</small></div><div class="arrow">↓</div>
+  <div class="box dec">Backend answered?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box bad">Show "backend unreachable" warning</div></div>
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box fe">Verify saved owner token (GET /auth/status)</div><div class="arrow">↓</div>
+      <div class="box dec">Valid owner token?</div>
+      <div class="branch">
+        <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box fe">Load email logs + saved resumes<small>owner mode unlocked</small></div></div>
+        <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box fe">Viewer mode<small>token cleared, lists stay empty</small></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>8.2 Becoming the owner</h3>
+<div class="flow">
+  <div class="box fe">Click "Unlock Owner Mode" → type passcode</div><div class="arrow">↓</div>
+  <div class="box be">POST /api/auth/verify-owner<small>rate limited: 10 tries / 15 min</small></div><div class="arrow">↓</div>
+  <div class="box dec">Passcode correct? (constant-time compare)</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box bad">403 "Invalid passcode"</div></div>
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box be">Server signs a token {exp: now+12h}</div><div class="arrow">↓</div>
+      <div class="box fe">Frontend saves token in localStorage<small>sent as header x-owner-key from now on</small></div><div class="arrow">↓</div>
+      <div class="box fe">Owner buttons unlock, lists reload</div></div>
+  </div>
+</div>
+
+<h3>8.3 Generating a cold email</h3>
+<div class="flow">
+  <div class="box fe">User pastes job requirement + recruiter name → "Generate"</div><div class="arrow">↓</div>
+  <div class="box be">POST /api/emails/generate<small>public, rate limited 20 / 15 min; job text ≤ 10,000 chars</small></div><div class="arrow">↓</div>
+  <div class="box ai">aiService.generateEmail → Gemini</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>AI ok</span>↓</div><div class="box be">{subject, body}</div></div>
+    <div class="flow"><div class="arrow"><span>no key / error</span>↓</div><div class="box be">Fallback template email</div></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box fe">Draft appears in the editor – user can edit before sending</div>
+</div>
+
+<h3>8.4 Sending an email (owner only)</h3>
+<div class="flow">
+  <div class="box fe">User picks a resume mode (existing / build new / none) → "Send"</div><div class="arrow">↓</div>
+  <div class="box be">POST /api/emails/send<small>requireOwner checks the token</small></div><div class="arrow">↓</div>
+  <div class="box dec">Valid owner token?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box bad">403 – nothing is sent</div></div>
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div>
+      <div class="box dec">Attach a resume?</div>
+      <div class="branch">
+        <div class="flow"><div class="arrow"><span>existing</span>↓</div><div class="box db">Load PDF from MongoDB</div></div>
+        <div class="flow"><div class="arrow"><span>new</span>↓</div><div class="box be">Use the just-built PDF, or build one now (see 8.5)</div></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="box dec">PDF available?</div>
+      <div class="branch">
+        <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box bad">Stop with a clear error (never send silently without it)</div></div>
+        <div class="flow"><div class="arrow"><span>yes</span>↓</div>
+          <div class="box be">emailService: strip duplicate sign-off, add signature, escape HTML</div><div class="arrow">↓</div>
+          <div class="box be">Nodemailer sends via SMTP</div><div class="arrow">↓</div>
+          <div class="box db">Save EmailLog (Success or Failed + error)</div><div class="arrow">↓</div>
+          <div class="box fe">UI shows success banner; log table refreshes</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>8.5 Generating a tailored resume</h3>
+<div class="flow">
+  <div class="box fe">Paste job description, choose project count → "Generate"</div><div class="arrow">↓</div>
+  <div class="box be">POST /api/resumes/generate<small>public, rate limited, ≤ 10,000 chars</small></div><div class="arrow">↓</div>
+  <div class="box db">Collect master resume + .cls + project READMEs<small>MongoDB → disk → built-in defaults</small></div><div class="arrow">↓</div>
+  <div class="box ai">Gemini picks best projects &amp; rewrites bullets (outputs LaTeX)</div><div class="arrow">↓</div>
+  <div class="box dec">Valid LaTeX (\documentclass … \end{document})?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box be">Use the base master resume instead</div></div>
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box be">Keep the AI LaTeX</div></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box be">Safety scan: reject \input, \write, \openin … </div><div class="arrow">↓</div>
+  <div class="box be">Wait for one of 2 compile slots → XeLaTeX in a temporary folder (60 s limit)</div><div class="arrow">↓</div>
+  <div class="box dec">Compiled?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box bad">Return LaTeX only + notice "PDF unavailable"</div></div>
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box be">PDF → base64</div></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box dec">Is the requester the owner?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box db">Saved in MongoDB (or memory if DB down)</div></div>
+    <div class="flow"><div class="arrow"><span>no (guest)</span>↓</div><div class="box be">Returned as a temporary "preview_" – nothing saved</div></div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="box fe">UI shows LaTeX + PDF preview</div>
+</div>
+
+<h3>8.6 Importing a project from GitHub (owner only)</h3>
+<div class="flow">
+  <div class="box fe">Paste https://github.com/user/repo → Import</div><div class="arrow">↓</div>
+  <div class="box be">POST /api/knowledge/projects/github-import (owner)<small>validate owner/repo names</small></div><div class="arrow">↓</div>
+  <div class="box be">Download raw README.md from branch main, else master<small>8 s timeout, 100 KB cap</small></div><div class="arrow">↓</div>
+  <div class="box be">Detect tech keywords (React, Docker, MongoDB …)</div><div class="arrow">↓</div>
+  <div class="box db">Save/Update ProjectReadme</div><div class="arrow">↓</div>
+  <div class="box fe">Project appears in the Knowledge Base list</div>
+</div>
+
+<h3>8.7 What happens when the database is down</h3>
+<div class="flow">
+  <div class="box be">Controller needs data</div><div class="arrow">↓</div>
+  <div class="box dec">connectDB.isConnected()?</div>
+  <div class="branch">
+    <div class="flow"><div class="arrow"><span>yes</span>↓</div><div class="box db">Use MongoDB; real errors return 400 / 404 / 500</div></div>
+    <div class="flow"><div class="arrow"><span>no</span>↓</div><div class="box be">Use in-memory store (lost on restart) – the app keeps working</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="owner">9. Owner mode vs Viewer mode</h2>
+<table>
+  <tr><th>Action</th><th>Viewer / guest</th><th>Owner</th></tr>
+  <tr><td>Generate AI email draft</td><td>✅ (rate limited)</td><td>✅</td></tr>
+  <tr><td>Generate tailored resume + PDF</td><td>✅ preview only, not saved</td><td>✅ saved to DB</td></tr>
+  <tr><td>Browse projects &amp; master resume</td><td>✅ read</td><td>✅ read/write</td></tr>
+  <tr><td>Send a real email</td><td>❌</td><td>✅</td></tr>
+  <tr><td>See email logs and saved resumes list</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Create / edit / delete projects, edit master resume</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Recompile or delete a saved resume</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Email categorizer API</td><td>❌</td><td>✅</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="api">10. API reference</h2>
+<p>All paths start with <code>/api</code>. <span class="badge pub">public</span> = anyone, <span class="badge own">owner</span> = needs the <code>x-owner-key</code> token, <span class="badge tag">limited</span> = rate limited (20 / 15 min).</p>
+<table>
+  <tr><th>Method &amp; path</th><th>Access</th><th>Purpose</th></tr>
+  <tr><td><code>GET /health</code></td><td><span class="badge pub">public</span></td><td>Is the server alive?</td></tr>
+  <tr><td><code>POST /auth/verify-owner</code></td><td><span class="badge pub">public</span> <span class="badge tag">10 / 15 min</span></td><td>Exchange passcode for a token</td></tr>
+  <tr><td><code>GET /auth/status</code></td><td><span class="badge pub">public</span></td><td>Is my token valid?</td></tr>
+  <tr><td><code>POST /emails/generate</code></td><td><span class="badge pub">public</span> <span class="badge tag">limited</span></td><td>AI email draft</td></tr>
+  <tr><td><code>POST /emails/send</code></td><td><span class="badge own">owner</span></td><td>Send email (+ optional resume)</td></tr>
+  <tr><td><code>GET /emails</code></td><td><span class="badge own">owner</span></td><td>Last 50 outreach logs</td></tr>
+  <tr><td><code>POST /emails</code></td><td><span class="badge own">owner</span></td><td>Manually add a log</td></tr>
+  <tr><td><code>POST /resumes/generate</code></td><td><span class="badge pub">public</span> <span class="badge tag">limited</span></td><td>Tailor resume + build PDF</td></tr>
+  <tr><td><code>GET /resumes/status</code></td><td><span class="badge pub">public</span></td><td>Is XeLaTeX / the API key available?</td></tr>
+  <tr><td><code>GET /resumes</code></td><td><span class="badge own">owner</span></td><td>List saved resumes (no PDFs)</td></tr>
+  <tr><td><code>GET /resumes/:id</code>, <code>GET /resumes/:id/pdf</code></td><td><span class="badge pub">public</span></td><td>Fetch one resume / its PDF (needs the id)</td></tr>
+  <tr><td><code>POST /resumes/recompile</code>, <code>PUT /resumes/:id</code></td><td><span class="badge own">owner</span></td><td>Compile edited LaTeX, save</td></tr>
+  <tr><td><code>DELETE /resumes/:id</code></td><td><span class="badge own">owner</span></td><td>Delete a resume</td></tr>
+  <tr><td><code>GET /knowledge/projects</code></td><td><span class="badge pub">public</span></td><td>List projects</td></tr>
+  <tr><td><code>POST /knowledge/projects</code>, <code>PUT/DELETE /knowledge/projects/:id</code></td><td><span class="badge own">owner</span></td><td>Create / update / delete a project</td></tr>
+  <tr><td><code>POST /knowledge/projects/github-import</code></td><td><span class="badge own">owner</span></td><td>Import README from GitHub</td></tr>
+  <tr><td><code>GET /knowledge/master-resume</code></td><td><span class="badge pub">public</span></td><td>Get the master resume</td></tr>
+  <tr><td><code>POST /knowledge/master-resume</code>, <code>POST /knowledge/master-resume/reset</code></td><td><span class="badge own">owner</span></td><td>Save / reset to the default</td></tr>
+  <tr><td><code>GET /knowledge/status</code></td><td><span class="badge pub">public</span></td><td>Knowledge base summary</td></tr>
+  <tr><td><code>POST /categorize</code></td><td><span class="badge own">owner</span> <span class="badge tag">limited</span></td><td>AI-categorize an email and save it</td></tr>
+  <tr><td><code>GET /categorize</code></td><td><span class="badge own">owner</span></td><td>List/filter categorized emails</td></tr>
+  <tr><td><code>PATCH /categorize/:id/status</code>, <code>DELETE /categorize/:id</code></td><td><span class="badge own">owner</span></td><td>Change status / delete</td></tr>
+  <tr><td><code>POST /categorize/reply</code>, <code>POST /categorize/regenerate-reply</code></td><td><span class="badge own">owner</span></td><td>Send / regenerate a smart reply</td></tr>
+</table>
+
+<h3>Example request and response</h3>
+<pre><code>POST /api/emails/generate
+Content-Type: application/json
+
+{ "jobRequirement": "Looking for a React + Node developer…", "recruiterName": "Asha" }
+
+→ 200
+{ "subject": "React/Node Developer – Rahul Prasad", "body": "Hi Asha,\n\nI came across…" }</code></pre>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="data">11. Database models</h2>
+<table>
+  <tr><th>Model (collection)</th><th>Stores</th><th>Key fields</th></tr>
+  <tr><td><code>EmailLog</code></td><td>Each outreach email attempt</td><td>recruiterName, recruiterEmail, subject, body, links, attachedResumeTitle, attachedResumeId, status (Success/Failed), error, sentAt</td></tr>
+  <tr><td><code>TailoredResume</code></td><td>Each generated resume</td><td>title, jobDescription, targetRole, company, latexContent, pdfBase64, pdfFileName, summary, keySkills, selectedProjects, projectCount</td></tr>
+  <tr><td><code>MasterResume</code></td><td>The base resume the AI edits</td><td>title, latexContent, clsContent, isDefault, version, notes</td></tr>
+  <tr><td><code>ProjectReadme</code></td><td>Knowledge-base projects</td><td>title, slug, tagline, techStack[], content, repoUrl, liveUrl, isFeatured, source</td></tr>
+  <tr><td><code>CategorizedEmail</code></td><td>Categorizer results</td><td>sender, subject, rawContent, category (7 types), priority P0–P5, sentiment, summary, deadline, suggestedReply, status</td></tr>
+</table>
+<p><b>Categorizer categories:</b> Interview Invitation · Job Offer / Assessment · Recruiter Outreach / Lead · Action / Follow-Up Needed · Application Rejection · Newsletter &amp; General · Spam / Irrelevant.</p>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="security">12. Security measures</h2>
+<p>The site is public and runs AI + a compiler, so many protections exist. These are good habits to learn from:</p>
+<ul>
+  <li><b>Secrets stay on the server</b> (API keys, SMTP password, passcode live in <code>.env</code>, which Git ignores).</li>
+  <li><b>Signed expiring tokens</b> instead of sending the passcode around; passcode compared in constant time; token signing key derived with scrypt (or <code>OWNER_TOKEN_SECRET</code>).</li>
+  <li><b>Rate limits</b> on AI endpoints and on passcode guessing.</li>
+  <li><b>LaTeX sandbox:</b> forbidden commands blocked, per-job temp folder, 60 s timeout, restricted file access, no shell escape, container runs as a non-root user.</li>
+  <li><b>Input limits:</b> 2 MB request body, 10,000-character job descriptions, 100 KB GitHub README.</li>
+  <li><b>Output safety:</b> email HTML is escaped, only http/https links allowed in signature, search text is regex-escaped.</li>
+  <li><b>CORS allow-list</b> so only your own website can call the API from a browser (rejects all cross-origin calls in production if not configured).</li>
+  <li><b>Private lists:</b> email logs and the saved-resume list require the owner token.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="env">13. Environment variables</h2>
+<h3>Backend (<code>backend/.env</code>)</h3>
+<table>
+  <tr><th>Name</th><th>Meaning</th></tr>
+  <tr><td><code>PORT</code></td><td>Port the server listens on (default 7000)</td></tr>
+  <tr><td><code>MONGO_URI</code></td><td>MongoDB connection string (optional – memory fallback without it)</td></tr>
+  <tr><td><code>GEMINI_API_KEY</code></td><td>Google AI Studio key</td></tr>
+  <tr><td><code>GEMINI_MODEL</code></td><td>Which Gemini model to call. Must be a real model ID or all AI calls fall back to templates</td></tr>
+  <tr><td><code>SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS</code></td><td>Your mail account (for Gmail use an App Password)</td></tr>
+  <tr><td><code>SMTP_FROM</code></td><td>The "From" address (defaults to SMTP_USER)</td></tr>
+  <tr><td><code>USER_NAME</code></td><td>Your name used in signatures and replies</td></tr>
+  <tr><td><code>OWNER_PASSCODE</code></td><td>Secret that unlocks Owner Mode. Without it, owner mode is disabled</td></tr>
+  <tr><td><code>OWNER_TOKEN_SECRET</code></td><td>Optional separate key used to sign tokens (recommended)</td></tr>
+  <tr><td><code>CORS_ORIGIN</code></td><td>Comma-separated list of allowed website URLs (your Vercel URL, <code>http://localhost:3000</code>)</td></tr>
+  <tr><td><code>TRUST_PROXY_HOPS</code></td><td>How many proxies sit in front of the server (Render = 1)</td></tr>
+</table>
+<h3>Frontend (<code>frontend/.env</code>)</h3>
+<table>
+  <tr><th>Name</th><th>Meaning</th></tr>
+  <tr><td><code>VITE_API_URL</code></td><td>Backend base URL including <code>/api</code>. Leave empty locally to use the dev proxy.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="run">14. Run it yourself</h2>
+<pre><code># 1. Prerequisites: Node.js 20+, (optional) MongoDB, (optional) XeLaTeX/MiKTeX for PDFs
+
+# 2. Get the code
+git clone https://github.com/RahulPrasad-78/Sendora.git
+cd Sendora
+
+# 3. Backend settings
+cp backend/.env.example backend/.env      # then fill in the values
+
+# 4. Install everything (npm workspaces installs both apps)
+npm install
+
+# 5. Start both servers
+npm run dev
+#   frontend → http://localhost:3000
+#   backend  → http://localhost:7000/api/health</code></pre>
+<div class="card warn"><b class="t">No MongoDB / no API key?</b> It still runs: data is kept in memory and AI features use fallback templates. PDFs need XeLaTeX installed on your machine.</div>
+
+<h3>Useful scripts</h3>
+<table>
+  <tr><th>Command</th><th>Does</th></tr>
+  <tr><td><code>npm run dev</code></td><td>Starts backend (nodemon auto-restart) and frontend (Vite) together</td></tr>
+  <tr><td><code>npm run build</code></td><td>Builds the production frontend into <code>frontend/dist</code></td></tr>
+  <tr><td><code>npm start</code></td><td>Runs the backend only</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="deploy">15. Deployment</h2>
+<ol>
+  <li><b>Backend → Render</b> using <code>backend/Dockerfile</code>. The image is Node 20 on Debian with TeX Live (XeTeX + extra fonts), installs only production dependencies, runs as the <code>node</code> user, and has a health check on <code>/api/health</code>. Add all backend environment variables in Render's dashboard.</li>
+  <li><b>Frontend → Vercel</b>. Set <code>VITE_API_URL</code> to your Render URL ending in <code>/api</code>. Add your Vercel URL to <code>CORS_ORIGIN</code> on Render.</li>
+  <li>Free Render servers <b>sleep</b> when idle; the first request can take 30–60 s. The frontend retries the health check to cope with this.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="gotchas">16. Known limits and gotchas</h2>
+<ul>
+  <li>The <b>Email Categorizer</b> screen is not built yet &mdash; only its API exists.</li>
+  <li><code>GET /resumes/:id</code> and the PDF link are public if someone knows the (hard to guess) id, because the PDF opens as a plain browser link.</li>
+  <li>In-memory fallback data disappears on restart.</li>
+  <li>The owner token lives in <code>localStorage</code>; it expires after 12 hours.</li>
+  <li>Rate limiting is per server instance (not shared across several servers).</li>
+  <li>If the Gemini model name is wrong, AI features quietly use fallbacks &mdash; check the message returned with generated content.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 class="sec" id="glossary">17. Glossary</h2>
+<table>
+  <tr><th>Word</th><th>Meaning</th></tr>
+  <tr><td>ATS</td><td>Applicant Tracking System – software recruiters use that scans resumes for keywords.</td></tr>
+  <tr><td>Base64</td><td>A way to write binary data (like a PDF) as plain text so it can travel inside JSON.</td></tr>
+  <tr><td>CORS</td><td>Browser rule that blocks a website from calling an API on another domain unless that API allows it.</td></tr>
+  <tr><td>Docker</td><td>Packages an app and everything it needs into a container that runs identically anywhere.</td></tr>
+  <tr><td>Fallback</td><td>A plan B used when something fails (no DB, no AI key…).</td></tr>
+  <tr><td>HMAC</td><td>A way to sign data with a secret key so tampering can be detected.</td></tr>
+  <tr><td>Rate limit</td><td>A cap on how many requests one visitor can make in a time window.</td></tr>
+  <tr><td>Workspace (npm)</td><td>One repository holding several packages (frontend + backend) installed together.</td></tr>
+  <tr><td>ObjectId</td><td>The unique id MongoDB gives each document.</td></tr>
+</table>
+
+<p style="margin-top:60px;color:var(--muted);font-size:.85rem">Sendora Project Guide · open this file in any browser, no internet or build step required.</p>
+</main>
+</div>
+</body>
+</html>
